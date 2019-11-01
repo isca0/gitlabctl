@@ -25,7 +25,8 @@ func ScanTotalPages(client *http.Client, url string) (p int) {
 
 	h, _ := get.Req()
 	p, _ = strconv.Atoi(h["X-Total-Pages"][0])
-	return p
+
+	return
 
 }
 
@@ -46,6 +47,7 @@ func (get *Requester) Req() (h http.Header, b []byte) {
 	b, _ = ioutil.ReadAll(resp.Body)
 
 	return
+
 }
 
 //func postRequest(client *http.Client, url string, data []byte) (h http.Header, b []byte) {

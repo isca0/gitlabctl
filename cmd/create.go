@@ -1,15 +1,20 @@
 package cmd
 
-import "net/http"
+import (
+	"net/http"
+)
 
 var (
-	getGroups = "https://gitlab.com/api/v4/groups/?private_token="
+	getGroups  = "https://gitlab.com/api/v4/groups/?private_token="
+	syncSearch = make(chan groups)
 )
 
 func CreateGroups(client *http.Client, fToken, dToken string) {
 
 	g := groups{}
-	g.list(client, getGroups, fToken)
+	go g.list(client, getGroups, fToken)
+	pages := <-syncSearch
+	search(pages)
 
 	//for _, single := range jsonOuts {
 	//	fmt.Println("Creating the group ", single.FullPath)
