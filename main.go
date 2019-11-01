@@ -13,77 +13,23 @@ of hardcode and a less reusable code.
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"gitmigrate/model"
-	"io/ioutil"
+	"gitmigrate/cmd"
 	"net/http"
 	"os"
-	"os/exec"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 )
 
-func scanTotalPages(client *http.Client, url string) (p int) {
+/*func projects(client *http.Client, fToken string) {
 
-	h, _ := getRequest(client, url)
-	p, _ = strconv.Atoi(h["X-Total-Pages"][0])
-	return p
-
-}
-
-func getRequest(client *http.Client, url string) (h http.Header, b []byte) {
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	h = resp.Header
-	b, _ = ioutil.ReadAll(resp.Body)
-
-	return h, b
-
-}
-
-func postRequest(client *http.Client, url string, data []byte) (h http.Header, b []byte) {
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	if err != nil {
-		fmt.Println("AHHHH ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("AHHHH ", err)
-		return
-	}
-	h = resp.Header
-	b, _ = ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-	return
-
-}
-
-func projects(client *http.Client, fToken string) {
-
-	url := "https://git.pgd.to/api/v4/projects"
 	opts := "?private_token=" + fToken + "&per_page=5"
-	totalpages := scanTotalPages(client, url+opts)
+	//totalpages := scanTotalPages(client, fromUrl+opts)
+	totalpages := scanTotalPages(client, toUrl+opts)
 	opts = opts + "&page="
 
 	for page := 1; page <= totalpages; page++ {
-		url = url + opts + strconv.Itoa(page)
-		_, body := getRequest(client, url)
+		fromUrl = fromUrl + opts + strconv.Itoa(page)
+		_, body := getRequest(client, fromUrl)
 
 		jsonOuts := model.Projects{}
 		err := json.Unmarshal(body, &jsonOuts)
@@ -110,73 +56,7 @@ func projects(client *http.Client, fToken string) {
 	}
 
 }
-
-func groups(client *http.Client, fToken, dToken string) {
-
-	url := "https://git.pgd.to/api/v4/groups"
-	opts := "?private_token=" + fToken + "&per_page=5"
-	totalpages := scanTotalPages(client, url+opts)
-	opts = opts + "&page="
-
-	exturl := "https://gitlab.com/api/v4/groups/?private_token=" + dToken
-	for page := 1; page <= totalpages; page++ {
-		url = url + opts + strconv.Itoa(page)
-		_, body := getRequest(client, url)
-		jsonOuts := model.Groups{}
-		err := json.Unmarshal(body, &jsonOuts)
-		if err != nil {
-			fmt.Println("fail to Unmarshal")
-			return
-		}
-		for _, single := range jsonOuts {
-			fmt.Println("Creating the group ", single.FullPath)
-			data := model.GroupCreation{}
-			data.Name = single.Name
-			data.Path = single.Path
-			data.Description = single.Description
-			re := regexp.MustCompile(`/`)
-			ok := re.MatchString(single.FullPath)
-
-			if !ok {
-				data.ParentID = 5134907
-				//data.ParentID = 5134907
-				jsonMarsh, _ := json.Marshal(data)
-				_, body := postRequest(client, exturl, jsonMarsh)
-
-				fmt.Println(string(body))
-				continue
-			}
-
-			spl := (strings.Split(single.FullPath, "/"))
-			searchOpts := "&search=" + spl[0]
-			searchurl := exturl + searchOpts
-			_, body := getRequest(client, searchurl)
-
-			if string(body) != "[]" {
-				parentGroup := model.Groups{}
-				err := json.Unmarshal(body, &parentGroup)
-				if err != nil {
-					fmt.Println("fail to Unmarshal")
-					return
-				}
-				for _, pg := range parentGroup {
-					fmt.Println("Using the parent group: ", pg.ID)
-					data.ParentID = pg.ID
-					jsonMarsh, _ := json.Marshal(data)
-					_, _ = postRequest(client, exturl, jsonMarsh)
-					continue
-				}
-
-			}
-
-			//return
-
-			//spl := (strings.Split(single.FullPath, "/"))
-
-		}
-
-	}
-}
+*/
 
 func main() {
 
@@ -188,6 +68,6 @@ func main() {
 		Timeout: time.Second * 30,
 	}
 
-	groups(client, fToken, dToken)
-	projects(client, fToken)
+	cmd.CreateGroups(client, fToken, dToken)
+	//projects(client, fToken)
 }
