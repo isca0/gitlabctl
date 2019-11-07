@@ -61,6 +61,7 @@ import (
 func main() {
 
 	fmt.Println("Starting GitMigrate")
+	cmd.Flags()
 	fToken := os.Getenv("FROMTOKEN")
 	dToken := os.Getenv("DESTOKEN")
 
@@ -68,6 +69,6 @@ func main() {
 		Timeout: time.Second * 30,
 	}
 
-	cmd.CreateGroups(client, fToken, dToken)
-	//projects(client, fToken)
+	cmd.Run(client, fToken, dToken)
+
 }
