@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"gitmigrate/handlers"
-	"gitmigrate/model"
+	"gitlabctl/handlers"
+	"gitlabctl/model"
 	"net/http"
 	"strconv"
 )

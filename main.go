@@ -14,7 +14,7 @@ package main
 
 import (
 	"fmt"
-	"gitmigrate/cmd"
+	"gitlabctl/cmd"
 	"net/http"
 	"os"
 	"time"
