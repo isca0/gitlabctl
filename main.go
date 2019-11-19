@@ -13,11 +13,7 @@ of hardcode and a less reusable code.
 package main
 
 import (
-	"fmt"
 	"gitlabctl/cmd"
-	"net/http"
-	"os"
-	"time"
 )
 
 /*func projects(client *http.Client, fToken string) {
@@ -60,15 +56,16 @@ import (
 
 func main() {
 
-	fmt.Println("Starting GitMigrate")
-	cmd.Flags()
-	fToken := os.Getenv("FROMTOKEN")
-	dToken := os.Getenv("DESTOKEN")
+	//fmt.Println("Starting GitMigrate")
+	//cmd.Flags()
+	//fToken := os.Getenv("FROMTOKEN")
+	//dToken := os.Getenv("DESTOKEN")
 
-	client := &http.Client{
-		Timeout: time.Second * 30,
-	}
+	//client := &http.Client{
+	//	Timeout: time.Second * 30,
+	//}
 
-	cmd.Run(client, fToken, dToken)
+	//cmd.Run(client, fToken, dToken)
+	cmd.Execute()
 
 }
