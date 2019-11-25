@@ -29,10 +29,10 @@ func init() {
 func initConfig() {
 	viper.AutomaticEnv()
 
-	switch {
-	case !viper.IsSet("sessiona"):
+	if !viper.IsSet("sessiona") {
 		fmt.Println(`Ups... You must declare at least one valid session token. Please declare that
 by exporting: export SESSIONA="myToken"`)
 		os.Exit(1)
 	}
+
 }
