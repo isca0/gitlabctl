@@ -22,31 +22,7 @@ import (
 	"gitlabctl/model"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/spf13/cobra"
 )
-
-// groupCmd represents the group command
-var groupCmd = &cobra.Command{
-	Use:   "group",
-	Short: "manipulation for groups",
-	Long:  `Manipulate groups, list/copy/create/delete.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		client := &http.Client{
-			Timeout: time.Second * 30,
-		}
-
-		if len(args) != 0 {
-			runList(args[0], target, client)
-		}
-
-	},
-}
-
-//func init() {
-//	lsCmd.AddCommand(groupCmd)
-//}
 
 //groupPages brings model.Groups to this package
 type groupPages model.Groups
@@ -57,7 +33,7 @@ type Groups struct {
 }
 
 // list groups on gitlab
-func (pg groupPages) list(client *http.Client, url, token string) (box Groups, err error) {
+func (pg groupPages) list(client *http.Client, url, token, gname string) (box Groups, err error) {
 
 	items := []groupPages{}
 	box = Groups{items}
@@ -89,24 +65,20 @@ func (pg groupPages) list(client *http.Client, url, token string) (box Groups, e
 
 }
 
-//func runList(arg, token string, client *http.Client) {
-//	g := groupPages{}
-//	groupSearch := 0
-//	groups, _ := g.list(client, getGroups, token)
-//	for _, grp := range groups.Group {
-//		if name != "" {
-//			if name == grp[0].Path {
-//				groupSearch = grp[0].ID
-//			}
-//			if grp[0].ID == groupSearch || grp[0].ParentID == groupSearch {
-//				fmt.Println(grp[0].FullPath + "\t\t" + grp[0].Path)
-//			}
-//			continue
-//		}
-//		fmt.Println(grp[0].FullPath + "\t\t" + grp[0].Path)
-//	}
-//}
-
-func runGroup(arg, token string, client *http.Client) {
-	fmt.Println(arg)
+func groupList(arg, token string, client *http.Client) {
+	g := groupPages{}
+	groupSearch := 0
+	groups, _ := g.list(client, getGroups, token, arg)
+	for _, grp := range groups.Group {
+		if name != "" {
+			if name == grp[0].Path {
+				groupSearch = grp[0].ID
+			}
+			if grp[0].ID == groupSearch || grp[0].ParentID == groupSearch {
+				fmt.Println(grp[0].FullPath)
+			}
+			continue
+		}
+		fmt.Println(grp[0].FullPath)
+	}
 }

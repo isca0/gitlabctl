@@ -20,23 +20,7 @@ import (
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"net/http"
-
-	"github.com/spf13/cobra"
 )
-
-// projCmd represents the proj command
-var projCmd = &cobra.Command{
-	Use:   "proj",
-	Short: "manipulation for projects",
-	Long:  `Manipulate projects, list/copy/create/delete.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("proj called")
-	},
-}
-
-func init() {
-	lsCmd.AddCommand(projCmd)
-}
 
 //projectPages brings model.Projects to this package
 type projectPages model.Projects

@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -30,37 +29,42 @@ var (
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls",
+	Use:   "ls args",
 	Short: "List projects or groups",
 	Long:  `List projects or groups from the received target.`,
+	Example: `  gitlabctl ls group --target $SESSIONA
+  gitlabctl ls proj --target $SESSIONB
+
+Args:
+  group	- will list groups.
+  proj	- will list projects.`,
+	Args:      cobra.MaximumNArgs(2),
+	ValidArgs: []string{"group", "proj"},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := &http.Client{
 			Timeout: time.Second * 30,
 		}
-
-		if len(args) != 0 {
-			runList(args[0], target, client)
-		}
-
+		runList(args, target, client)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(lsCmd)
-	lsCmd.AddCommand(groupCmd)
 	lsCmd.PersistentFlags().StringVarP(&target, "target", "t", os.Getenv("SESSIONA"), "specifies the target to be listed.")
+	lsCmd.SetArgs([]string{"group", "proj"})
 }
 
-func runList(arg, token string, client *http.Client) {
-	fmt.Println(arg)
-}
+// runList executes the ls command by treating received arguments.
+func runList(arg []string, token string, client *http.Client) {
+	switch {
+	case arg[0] == "group":
+		groupList(arg[1], token, client)
+	case arg[0] == "proj":
+		p := projectPages{}
+		p.list(client, getProj, token)
+		//for _, prj := range projects.Project {
+		//	fmt.Println(prj[0].Name)
+		//}
 
-//	case arg == "proj":
-//		p := projectPages{}
-//		p.list(client, getProj, token)
-//		//for _, prj := range projects.Project {
-//		//	fmt.Println(prj[0].Name)
-//		//}
-//	}
-//
-//}
+	}
+}
