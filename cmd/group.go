@@ -33,7 +33,7 @@ type Groups struct {
 }
 
 // list groups on gitlab
-func (pg groupPages) list(client *http.Client, url, token, gname string) (box Groups, err error) {
+func (pg groupPages) list(client *http.Client, url, token string, args []string) (box Groups, err error) {
 
 	items := []groupPages{}
 	box = Groups{items}
@@ -46,6 +46,7 @@ func (pg groupPages) list(client *http.Client, url, token, gname string) (box Gr
 	totalpages := handlers.ScanTotalPages(client, get.Url+opts)
 	opts = opts + "&page="
 
+	var grp int
 	for page := 1; page <= totalpages; page++ {
 		get.Url = url + token + opts + strconv.Itoa(page)
 		_, pages := get.Req()
@@ -56,7 +57,17 @@ func (pg groupPages) list(client *http.Client, url, token, gname string) (box Gr
 
 		for _, g := range pg {
 			item := groupPages{g}
-			box.Group = append(box.Group, item)
+			if len(args) <= 1 {
+				box.Group = append(box.Group, item)
+				continue
+			}
+			if item[0].FullPath == args[1] {
+				grp = item[0].ID
+			}
+			if grp == item[0].ID || grp == item[0].ParentID {
+				box.Group = append(box.Group, item)
+			}
+
 		}
 
 	}
@@ -65,10 +76,10 @@ func (pg groupPages) list(client *http.Client, url, token, gname string) (box Gr
 
 }
 
-func groupList(arg, token string, client *http.Client) {
+func groupList(args []string, token string, client *http.Client) {
 	g := groupPages{}
 	groupSearch := 0
-	groups, _ := g.list(client, getGroups, token, arg)
+	groups, _ := g.list(client, getGroups, token, args)
 	for _, grp := range groups.Group {
 		if name != "" {
 			if name == grp[0].Path {

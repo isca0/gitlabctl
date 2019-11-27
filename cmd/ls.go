@@ -55,11 +55,11 @@ func init() {
 }
 
 // runList executes the ls command by treating received arguments.
-func runList(arg []string, token string, client *http.Client) {
+func runList(args []string, token string, client *http.Client) {
 	switch {
-	case arg[0] == "group":
-		groupList(arg[1], token, client)
-	case arg[0] == "proj":
+	case args[0] == "group":
+		groupList(args, token, client)
+	case args[0] == "proj":
 		p := projectPages{}
 		p.list(client, getProj, token)
 		//for _, prj := range projects.Project {
