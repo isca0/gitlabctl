@@ -22,4 +22,5 @@ type GroupCreation struct {
 	Path        string `json:"path"`
 	Description string `json:"description"`
 	ParentID    int    `json:"parent_id"`
+	Visibility  string `json:"visibility"`
 }

@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -41,7 +42,10 @@ Args:
   group	- will copy groups.
   proj	- will copy projects.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("cp called")
+			client := &http.Client{
+				Timeout: time.Second * 30,
+			}
+			runCopy(args, from, to, client)
 		},
 	}
 )
@@ -57,11 +61,10 @@ func init() {
 }
 
 // runCopy executes the cp command by treating received arguments(group or projects).
-func runCopy(args []string, token string, client *http.Client) {
+func runCopy(args []string, from, to string, client *http.Client) {
 	switch {
 	case args[0] == "group":
-		//groupCopy(args, tokenA, client)
-		fmt.Println("groupCopy")
+		groupCopy(from, to, client)
 	case args[0] == "proj":
 		fmt.Println("projectCopy")
 	}

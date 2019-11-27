@@ -22,6 +22,9 @@ import (
 	"gitlabctl/model"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/spf13/viper"
 )
 
 //groupPages brings model.Groups to this package
@@ -76,6 +79,7 @@ func (pg groupPages) list(client *http.Client, url, token string, args []string)
 
 }
 
+// groupList execute the method list to loop over groups and print to stdout.
 func groupList(args []string, token string, client *http.Client) {
 	g := groupPages{}
 	groupSearch := 0
@@ -92,4 +96,39 @@ func groupList(args []string, token string, client *http.Client) {
 		}
 		fmt.Println(grp[0].FullPath)
 	}
+}
+
+// groupCopy - copy groups from the received source to the destination.
+func groupCopy(f, t string, client *http.Client) {
+	from := strings.Split(f, ":")
+	ftk := viper.GetString(from[0])
+	to := strings.Split(t, ":")
+	totk := viper.GetString(to[0])
+	fmt.Println(to)
+
+	g := groupPages{}
+	//groupSearch := 0
+	var masterID int
+	groups, _ := g.list(client, getGroups, ftk, from)
+	for _, grp := range groups.Group {
+		if from[1] == grp[0].FullPath {
+			masterID = grp[0].ID
+			fmt.Println("creating group", grp[0].Name)
+			grp.createGroup(totk, to[1], client)
+		}
+		fmt.Println(masterID)
+	}
+}
+
+// createGroup - create a group or subgroup on the destination token.
+func (grp groupPages) createGroup(token, to string, client *http.Client) {
+
+	post := handlers.Requester{
+		Client: client,
+		Url:    getGroups + token + "&visibility=" + grp[0].Visibility + "&name=" + grp[0].Name + "&description=" + grp[0].Description,
+		Meth:   "POST",
+	}
+
+	h, b := post.Req()
+	fmt.Println(h, string(b))
 }
