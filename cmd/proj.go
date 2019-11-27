@@ -16,16 +16,17 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"net/http"
+	"strconv"
 )
 
 //projectPages brings model.Projects to this package
 type projectPages model.Projects
 
-//Projects is the appended pagesGroup
 type Projects struct {
 	Project []projectPages
 }
@@ -40,22 +41,21 @@ func (pj projectPages) list(client *http.Client, url, token string) (box Project
 		Client: client,
 		Url:    url + token}
 
-	opts := "&per_page=5"
+	opts := "&per_page=40"
 	totalpages := handlers.ScanTotalPages(client, get.Url+opts)
-	fmt.Println(totalpages)
 	opts = opts + "&page="
 
-	//for page := 1; page <= totalpages; page++ {
-	//	get.Url = url + token + opts + strconv.Itoa(page)
-	//	_, pages := get.Req()
-	//	err = json.Unmarshal(pages, &pj)
-	//	if err != nil {
-	//		return box, err
-	//	}
-	//	for _, p := range pj {
-	//		fmt.Println(p.Name)
-	//	}
-	//}
+	for page := 1; page <= totalpages; page++ {
+		get.Url = url + token + opts + strconv.Itoa(page)
+		_, pages := get.Req()
+		err = json.Unmarshal(pages, &pj)
+		if err != nil {
+			return box, err
+		}
+		for _, p := range pj {
+			fmt.Println(p.Namespace.FullPath + "/" + p.Name)
+		}
+	}
 
 	return box, nil
 

@@ -23,7 +23,6 @@ func ScanTotalPages(client *http.Client, url string) (p int) {
 		Client: client,
 		Url:    url}
 
-	//fmt.Println(get.Url)
 	h, _ := get.Req()
 	p, _ = strconv.Atoi(h["X-Total-Pages"][0])
 

@@ -17,10 +17,10 @@ package cmd
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -32,8 +32,8 @@ var lsCmd = &cobra.Command{
 	Use:   "ls args",
 	Short: "List projects or groups",
 	Long:  `List projects or groups from the received target.`,
-	Example: `  gitlabctl ls group --target $SESSIONA
-  gitlabctl ls proj --target $SESSIONB
+	Example: `  gitlabctl ls group --target sessionA
+  gitlabctl ls proj --target sessionB
 
 Args:
   group	- will list groups.
@@ -44,13 +44,13 @@ Args:
 		client := &http.Client{
 			Timeout: time.Second * 30,
 		}
-		runList(args, target, client)
+		runList(args, viper.GetString(target), client)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(lsCmd)
-	lsCmd.PersistentFlags().StringVarP(&target, "target", "t", os.Getenv("SESSIONA"), "specifies the target to be listed.")
+	lsCmd.PersistentFlags().StringVarP(&target, "target", "t", "SESSIONA", "specifies the target to be listed.")
 	lsCmd.SetArgs([]string{"group", "proj"})
 }
 
