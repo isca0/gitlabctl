@@ -31,13 +31,16 @@ import (
 //groupPages brings model.Groups to this package
 type groupPages model.Groups
 
+//groupSolo brings model.Group to this package
+type groupSolo model.Group
+
 //Groups is the appended pagesGroup
 type Groups struct {
 	Group []groupPages
 }
 
 // list groups on gitlab
-func (pg groupPages) list(client *http.Client, url, token string, args []string) (box Groups, err error) {
+func (gp groupPages) list(client *http.Client, url, token string, args []string) (box Groups, err error) {
 
 	items := []groupPages{}
 	box = Groups{items}
@@ -54,12 +57,12 @@ func (pg groupPages) list(client *http.Client, url, token string, args []string)
 	for page := 1; page <= totalpages; page++ {
 		get.Url = url + token + opts + strconv.Itoa(page)
 		_, pages := get.Req()
-		err = json.Unmarshal(pages, &pg)
+		err = json.Unmarshal(pages, &gp)
 		if err != nil {
 			return box, err
 		}
 
-		for _, g := range pg {
+		for _, g := range gp {
 			item := groupPages{g}
 			if len(args) <= 1 {
 				box.Group = append(box.Group, item)
@@ -100,28 +103,48 @@ func groupList(args []string, token string, client *http.Client) {
 }
 
 // groupCopy - copy groups from the received source to the destination.
-func groupCopy(f, t string, client *http.Client) {
+func groupCopy(f, t string, client *http.Client) (err error) {
 	from := strings.Split(f, ":")
 	ftk := viper.GetString(from[0])
-	to := strings.Split(t, ":")
-	totk := viper.GetString(to[0])
-	fmt.Println(to)
+	//to := strings.Split(t, ":")
+	//totk := viper.GetString(to[0])
 
 	g := groupPages{}
-	//groupSearch := 0
-	var masterID int
-	groups, _ := g.list(client, getGroups, ftk, from)
-	for _, grp := range groups.Group {
-		if from[1] == grp[0].FullPath {
-			masterID = grp[0].ID
-			fmt.Println("creating group", grp[0].Name)
-			grp.createGroup(totk, to[1], client)
-			fmt.Println(masterID)
-		}
+	//g.createGroup(groupSolo{}, totk, to[1], client)
+
+	get := handlers.Requester{
+		Meth:   "GET",
+		Client: client,
 	}
+
+	gid, _ := g.searchGroup(ftk, from[1], client)
+	get.Url = getSubg + strconv.Itoa(gid) + "/subgroups?private_token=" + ftk
+	_, b := get.Req()
+	err = json.Unmarshal(b, &g)
+	if err != nil {
+		return err
+	}
+
+	//p := model.Projects{}
+	for _, grp := range g {
+		fmt.Println(grp.FullPath)
+		//g.createGroup(grp, totk, to[1], client)
+
+		//get.Url = getSubg + strconv.Itoa(grp.ID) + "/projects?private_token=" + ftk + "&per_page=50"
+		//_, b := get.Req()
+		//err = json.Unmarshal(b, &p)
+		//if err != nil {
+		//	return err
+		//}
+		//for _, prj := range p {
+		//	fmt.Println(prj.PathWithNamespace)
+		//}
+	}
+
+	return
 }
 
-func (g groupPages) searchGroup(t, n string, client *http.Client) (int, error) {
+func (gp groupPages) searchGroup(t, n string, client *http.Client) (int, error) {
 
 	get := handlers.Requester{
 		Client: client,
@@ -130,34 +153,41 @@ func (g groupPages) searchGroup(t, n string, client *http.Client) (int, error) {
 	}
 
 	_, b := get.Req()
-	err := json.Unmarshal(b, &g)
+	err := json.Unmarshal(b, &gp)
 	if err != nil {
 		return 0, err
 	}
-	if len(g) <= 0 {
-		err = errors.New("group doesnt exist!")
+	if len(gp) <= 0 {
+		err = errors.New("failed, group inexistent")
 		return 0, err
 	}
-	return g[0].ID, nil
+	return gp[0].ID, nil
 }
 
 // createGroup - create a group or subgroup on the destination token.
-func (grp groupPages) createGroup(token, to string, client *http.Client) {
+func (gp groupPages) createGroup(g groupSolo, token, to string, client *http.Client) {
 
-	gid, _ := grp.searchGroup(token, to, client)
-	data := strings.NewReader(`{"description":"` + grp[0].Description + `"}`)
 	post := &handlers.Requester{
-		Client: client,
-		Url:    getGroups + token + "&visibility=" + grp[0].Visibility + "&name=" + grp[0].Name,
 		Meth:   "POST",
-		Io:     data,
+		Client: client,
 	}
 
-	if gid == 0 {
+	gid, _ := gp.searchGroup(token, to, client)
+
+	switch {
+	case gid == 0 && to != g.Name:
+		data := strings.NewReader(`{"description":"Group Created with gitlabctl"}`)
+		post.Url = getGroups + token + "&visibility=private&name=" + to
 		post.Url = post.Url + "&path=" + to
-		post.Req()
-		return
+		post.Io = data
+		//post.Req()
+
+	case gid == 0:
+		data := strings.NewReader(`{"description":"` + g.Description + `"}`)
+		post.Url = getGroups + token + "&visibility=" + g.Visibility + "&name=" + g.Name
+		post.Url = post.Url + "&path=" + g.Path + "&parent_id=" + strconv.Itoa(gid)
+		post.Io = data
+		//post.Req()
 	}
-	post.Url = post.Url + "&path=" + grp[0].Path + "&parent_id=" + strconv.Itoa(gid)
-	post.Req()
+
 }
