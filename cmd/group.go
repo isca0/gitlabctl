@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
@@ -115,20 +116,48 @@ func groupCopy(f, t string, client *http.Client) {
 			masterID = grp[0].ID
 			fmt.Println("creating group", grp[0].Name)
 			grp.createGroup(totk, to[1], client)
+			fmt.Println(masterID)
 		}
-		fmt.Println(masterID)
 	}
+}
+
+func (g groupPages) searchGroup(t, n string, client *http.Client) (int, error) {
+
+	get := handlers.Requester{
+		Client: client,
+		Url:    getGroups + t + "&search=" + n,
+		Meth:   "GET",
+	}
+
+	_, b := get.Req()
+	err := json.Unmarshal(b, &g)
+	if err != nil {
+		return 0, err
+	}
+	if len(g) <= 0 {
+		err = errors.New("group doesnt exist!")
+		return 0, err
+	}
+	return g[0].ID, nil
 }
 
 // createGroup - create a group or subgroup on the destination token.
 func (grp groupPages) createGroup(token, to string, client *http.Client) {
 
-	post := handlers.Requester{
+	gid, _ := grp.searchGroup(token, to, client)
+	data := strings.NewReader(`{"description":"` + grp[0].Description + `"}`)
+	post := &handlers.Requester{
 		Client: client,
-		Url:    getGroups + token + "&visibility=" + grp[0].Visibility + "&name=" + grp[0].Name + "&description=" + grp[0].Description,
+		Url:    getGroups + token + "&visibility=" + grp[0].Visibility + "&name=" + grp[0].Name,
 		Meth:   "POST",
+		Io:     data,
 	}
 
-	h, b := post.Req()
-	fmt.Println(h, string(b))
+	if gid == 0 {
+		post.Url = post.Url + "&path=" + to
+		post.Req()
+		return
+	}
+	post.Url = post.Url + "&path=" + grp[0].Path + "&parent_id=" + strconv.Itoa(gid)
+	post.Req()
 }

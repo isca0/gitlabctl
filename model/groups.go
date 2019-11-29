@@ -15,12 +15,3 @@ type Groups []struct {
 	FullPath             string `json:"full_path"`
 	ParentID             int    `json:"parent_id"`
 }
-
-// GroupCreation simplifies the groups creation.
-type GroupCreation struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Description string `json:"description"`
-	ParentID    int    `json:"parent_id"`
-	Visibility  string `json:"visibility"`
-}
