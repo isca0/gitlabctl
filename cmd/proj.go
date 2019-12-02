@@ -22,10 +22,11 @@ import (
 	"gitlabctl/model"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 //projectPages brings model.Projects to this package
-type projectPages model.Projects
+type projectPages []model.Projects
 
 type Projects struct {
 	Project []projectPages
@@ -59,4 +60,17 @@ func (pj projectPages) list(client *http.Client, url, token string) (box Project
 
 	return box, nil
 
+}
+
+func (pj *projectPages) create(p model.Projects, token, pid string, client *http.Client) {
+
+	post := &handlers.Requester{
+		Meth:   "POST",
+		Client: client,
+	}
+	data := strings.NewReader(`{"description":"` + p.Description + `","visibility":"` + p.Visibility + `","name":"` + p.Name + `","namespace_id":"` + pid + `"}`)
+	post.Url = UrlProj + "?private_token=" + token
+	post.Io = data
+
+	post.Req()
 }

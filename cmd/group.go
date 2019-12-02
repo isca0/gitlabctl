@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Igor Brandao <igorsca at protonmail dot com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,17 +22,15 @@ import (
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
-//groupPages brings model.Groups to this package
-type groupPages model.Groups
-
-//groupSolo brings model.Group to this package
-type groupSolo model.Group
+//groupPages brings model.Group to this package
+type groupPages []model.Group
 
 //Groups is the appended pagesGroup
 type Groups struct {
@@ -106,16 +104,27 @@ func groupList(args []string, token string, client *http.Client) {
 func groupCopy(f, t string, client *http.Client) (err error) {
 	from := strings.Split(f, ":")
 	ftk := viper.GetString(from[0])
-	//to := strings.Split(t, ":")
-	//totk := viper.GetString(to[0])
+	to := strings.Split(t, ":")
+	totk := viper.GetString(to[0])
 
 	g := groupPages{}
-	//g.createGroup(groupSolo{}, totk, to[1], client)
-
 	get := handlers.Requester{
 		Meth:   "GET",
 		Client: client,
 	}
+
+	//master group creation
+	mgid, _ := g.searchGroup(totk, to[1], client)
+	if mgid == 0 {
+		grp := model.Group{
+			Name:       to[1],
+			Path:       to[1],
+			Visibility: "private",
+		}
+		mgid, _, _ = g.createGroup(grp, totk, client)
+		fmt.Printf("creating master group: %s", to[1])
+	}
+	fmt.Printf(" Master partend ID will be: %d\r\n", mgid)
 
 	gid, _ := g.searchGroup(ftk, from[1], client)
 	get.Url = getSubg + strconv.Itoa(gid) + "/subgroups?private_token=" + ftk
@@ -124,23 +133,55 @@ func groupCopy(f, t string, client *http.Client) (err error) {
 	if err != nil {
 		return err
 	}
+	mg := model.Group{
+		ID:   gid,
+		Name: to[1],
+	}
+	g = append(g, mg)
 
-	//p := model.Projects{}
+	proj := projectPages{}
 	for _, grp := range g {
-		fmt.Println(grp.FullPath)
-		//g.createGroup(grp, totk, to[1], client)
 
-		//get.Url = getSubg + strconv.Itoa(grp.ID) + "/projects?private_token=" + ftk + "&per_page=50"
-		//_, b := get.Req()
-		//err = json.Unmarshal(b, &p)
-		//if err != nil {
-		//	return err
-		//}
-		//for _, prj := range p {
-		//	fmt.Println(prj.PathWithNamespace)
-		//}
+		pgid := g.setParentGroup(mgid, totk, from[1], grp, client)
+		fmt.Printf("group %s with parent id: %d\r\n", grp.Name, pgid)
+		grp.ParentID = pgid
+		gid, _, _ := g.createGroup(grp, totk, client)
+		if gid == 0 {
+			gid, _ = g.searchGroup(totk, grp.Name, client)
+		}
+
+		get.Url = getSubg + strconv.Itoa(grp.ID) + "/projects?private_token=" + ftk + "&per_page=50"
+		_, b := get.Req()
+		err = json.Unmarshal(b, &proj)
+		if err != nil {
+			return err
+		}
+		for _, p := range proj {
+			proj.create(p, totk, strconv.Itoa(gid), client)
+			fmt.Println(p.PathWithNamespace)
+		}
 	}
 
+	return
+}
+
+func (g groupPages) setParentGroup(mid int, token, from string, grp model.Group, client *http.Client) (id int) {
+
+	id, _ = g.searchGroup(token, grp.Name, client)
+	if id != 0 && grp.ParentID != 0 {
+		id = mid
+		//fmt.Printf("already exist ")
+		return
+	}
+	re := regexp.MustCompile(`/`)
+	if re.MatchString(grp.FullPath) {
+		slash := strings.Split(grp.FullPath, "/")
+		id, _ = g.searchGroup(token, slash[len(slash)-2], client)
+		if slash[len(slash)-2] == from {
+			id = mid
+		}
+		id = mid
+	}
 	return
 }
 
@@ -165,29 +206,26 @@ func (gp groupPages) searchGroup(t, n string, client *http.Client) (int, error) 
 }
 
 // createGroup - create a group or subgroup on the destination token.
-func (gp groupPages) createGroup(g groupSolo, token, to string, client *http.Client) {
+func (gp groupPages) createGroup(g model.Group, token string, client *http.Client) (int, int, error) {
 
 	post := &handlers.Requester{
 		Meth:   "POST",
 		Client: client,
 	}
 
-	gid, _ := gp.searchGroup(token, to, client)
+	data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
+	post.Url = getGroups + token
+	if g.ParentID != 0 {
+		post.Url = getGroups + token + "&parent_id=" + strconv.Itoa(g.ParentID)
+	}
+	post.Io = data
 
-	switch {
-	case gid == 0 && to != g.Name:
-		data := strings.NewReader(`{"description":"Group Created with gitlabctl"}`)
-		post.Url = getGroups + token + "&visibility=private&name=" + to
-		post.Url = post.Url + "&path=" + to
-		post.Io = data
-		//post.Req()
-
-	case gid == 0:
-		data := strings.NewReader(`{"description":"` + g.Description + `"}`)
-		post.Url = getGroups + token + "&visibility=" + g.Visibility + "&name=" + g.Name
-		post.Url = post.Url + "&path=" + g.Path + "&parent_id=" + strconv.Itoa(gid)
-		post.Io = data
-		//post.Req()
+	res := model.Group{}
+	_, b := post.Req()
+	err := json.Unmarshal(b, &res)
+	if err != nil {
+		return res.ID, res.ParentID, err
 	}
 
+	return res.ID, res.ParentID, nil
 }
