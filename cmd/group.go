@@ -100,6 +100,23 @@ func groupList(args []string, token string, client *http.Client) {
 	}
 }
 
+// isGroup discover if the received string is a group or not.
+func isGroup(s, token string, c *http.Client) (b bool, i int) {
+
+	g := groupPages{}
+
+	gid, err := g.searchGroup(token, s, c)
+	if err != nil {
+		return
+	}
+
+	if gid != 0 {
+		i = gid
+		return true, i
+	}
+	return
+}
+
 // groupCopy - copy groups from the received source to the destination.
 func groupCopy(f, t string, client *http.Client) (err error) {
 	from := strings.Split(f, ":")
