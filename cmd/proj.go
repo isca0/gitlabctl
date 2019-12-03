@@ -62,7 +62,7 @@ func (pj projectPages) list(client *http.Client, url, token string) (box Project
 
 }
 
-func (pj *projectPages) create(p model.Projects, token, pid string, client *http.Client) {
+func (pj *projectPages) create(p model.Projects, token, pid string, client *http.Client) (proj *model.Projects, err error) {
 
 	post := &handlers.Requester{
 		Meth:   "POST",
@@ -72,5 +72,11 @@ func (pj *projectPages) create(p model.Projects, token, pid string, client *http
 	post.Url = UrlProj + "?private_token=" + token
 	post.Io = data
 
-	post.Req()
+	_, b := post.Req()
+	//fmt.Println(string(b))
+	err = json.Unmarshal(b, &proj)
+	if err != nil {
+		return proj, err
+	}
+	return
 }

@@ -156,8 +156,17 @@ func groupCopy(f, t string, client *http.Client) (err error) {
 		if err != nil {
 			return err
 		}
+
 		for _, p := range proj {
-			proj.create(p, totk, strconv.Itoa(gid), client)
+			p.Custom.BareRepo = false
+			p.Custom.ClonePath = "/tmp/gitlabctl/" + p.Name
+			newP, _ := proj.create(p, totk, strconv.Itoa(gid), client)
+			fmt.Println(newP)
+			p.Custom.NewRepo = newP.HTTPURLToRepo
+			fmt.Println(p.Custom)
+			handlers.Clone(p, viper.GetString("FROMUSER"), ftk)
+			handlers.RemoteChange(p)
+			handlers.Push(p, viper.GetString("TOUSER"), totk)
 			fmt.Println(p.PathWithNamespace)
 		}
 	}

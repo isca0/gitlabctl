@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// Projects satisfies every project methods.
 type Projects struct {
 	ID                int           `json:"id"`
 	Description       string        `json:"description"`
@@ -28,4 +29,12 @@ type Projects struct {
 		FullPath string `json:"full_path"`
 		ParentID int    `json:"parent_id"`
 	} `json:"namespace"`
+	Custom CustomFlags `json:"custom_flags"`
+}
+
+// CustomFlags brigs custom paramethers to projects.
+type CustomFlags struct {
+	ClonePath string `json:"clone_path"`
+	BareRepo  bool   `json:"bare_repo"`
+	NewRepo   string `json:"new_repo"`
 }

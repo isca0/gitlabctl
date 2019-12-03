@@ -49,23 +49,3 @@ func (get *Requester) Req() (h http.Header, b []byte) {
 	return
 
 }
-
-//func postRequest(client *http.Client, url string, data []byte) (h http.Header, b []byte) {
-//
-//	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-//	if err != nil {
-//		fmt.Println("AHHHH ", err)
-//		return
-//	}
-//	req.Header.Set("Content-Type", "application/json")
-//	resp, err := client.Do(req)
-//	if err != nil {
-//		fmt.Println("AHHHH ", err)
-//		return
-//	}
-//	h = resp.Header
-//	b, _ = ioutil.ReadAll(resp.Body)
-//	defer resp.Body.Close()
-//	return
-//
-//}
