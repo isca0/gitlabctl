@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -26,33 +25,31 @@ import (
 var (
 
 	//used for flags
-	from, to string
+	from, to    string
+	proj, group bool
 
 	// cpCmd represents the cp command
 	cpCmd = &cobra.Command{
-		Use:       "cp args",
-		Short:     "Copy groups and projects",
-		Long:      `Copy group and projects from one session to another.`,
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: []string{"group", "proj"},
-		Example: `  gitlabctl cp group --from sessionA:fullPath --to sessionB:fullPath
-  gitlabctl cp proj --from sessionA:fullPath --to sessionB:fullPath
+		Use:   "cp",
+		Short: "Copy groups and projects",
+		Long:  `Copy group and projects from one session to another.`,
+		Args:  cobra.NoArgs,
+		Example: `  gitlabctl cp -p --from sessionA:fullPath --to sessionB:fullPath
+  gitlabctl cp -g --from sessionA:fullPath --to sessionB:fullPath`,
 
-Args:
-  group	- will copy groups.
-  proj	- will copy projects.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			client := &http.Client{
 				Timeout: time.Second * 30,
 			}
-			runCopy(args, from, to, client)
+			runCopy(from, to, client)
 		},
 	}
 )
 
 func init() {
 	rootCmd.AddCommand(cpCmd)
-	cpCmd.SetArgs([]string{"group", "proj"})
+	cpCmd.Flags().BoolP("proj", "p", false, "use to copy projects.")
+	cpCmd.Flags().BoolP("group", "g", false, "use to copy groups.")
 	cpCmd.Flags().StringVarP(&from, "from", "f", "", "specifies the session token + full group path as the source. (required)")
 	cpCmd.MarkFlagRequired("from")
 	cpCmd.Flags().StringVarP(&to, "to", "t", "", "specifies the session token + full group path as the destination. (required)")
@@ -61,11 +58,13 @@ func init() {
 }
 
 // runCopy executes the cp command by treating received arguments(group or projects).
-func runCopy(args []string, from, to string, client *http.Client) {
+func runCopy(from, to string, client *http.Client) {
 	switch {
-	case args[0] == "group":
-		groupCopy(from, to, client)
-	case args[0] == "proj":
-		fmt.Println("projectCopy")
+	case proj:
+		g := groupPages{}
+		g.copy(from, to, client)
+	case group:
+		p := projectPages{}
+		p.copy(from, to, client)
 	}
 }

@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/yanzay/log"
 )
 
 // Requester satisfies the Req method.
@@ -23,7 +26,7 @@ func ScanTotalPages(client *http.Client, url string) (p int) {
 		Client: client,
 		Url:    url}
 
-	h, _ := get.Req()
+	h, _, _, _ := get.Req()
 	p, _ = strconv.Atoi(h["X-Total-Pages"][0])
 
 	return
@@ -31,14 +34,14 @@ func ScanTotalPages(client *http.Client, url string) (p int) {
 }
 
 // Req a generic http method to create POST or GET Requests.
-func (get *Requester) Req() (h http.Header, b []byte) {
+func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err error) {
 
 	req, err := http.NewRequest(get.Meth, get.Url, get.Io)
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := get.Client.Do(req)
+	resp, err = get.Client.Do(req)
 	if err != nil {
 		return
 	}
@@ -46,6 +49,11 @@ func (get *Requester) Req() (h http.Header, b []byte) {
 	h = resp.Header
 	b, _ = ioutil.ReadAll(resp.Body)
 
-	return
+	if resp.StatusCode != 200 {
+		err = errors.New(resp.Status + " " + get.Url)
+		log.Error(err)
+		return
+	}
 
+	return
 }

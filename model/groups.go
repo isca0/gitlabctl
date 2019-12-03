@@ -19,3 +19,14 @@ type Group struct {
 	FullPath                       string `json:"full_path"`
 	ParentID                       int    `json:"parent_id"`
 }
+
+// GroupData is the group creation used on http.Header.
+type GroupData struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+	AvatarURL   string `json:"avatar_url"`
+	ParentID    int    `json:"parent_id"`
+}
