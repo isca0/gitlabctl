@@ -48,8 +48,8 @@ var (
 
 func init() {
 	rootCmd.AddCommand(cpCmd)
-	cpCmd.Flags().BoolP("proj", "p", false, "use to copy projects.")
-	cpCmd.Flags().BoolP("group", "g", false, "use to copy groups.")
+	cpCmd.Flags().BoolVarP(&proj, "proj", "p", false, "use to copy projects.")
+	cpCmd.Flags().BoolVarP(&group, "group", "g", false, "use to copy groups. (default)")
 	cpCmd.Flags().StringVarP(&from, "from", "f", "", "specifies the session token + full group path as the source. (required)")
 	cpCmd.MarkFlagRequired("from")
 	cpCmd.Flags().StringVarP(&to, "to", "t", "", "specifies the session token + full group path as the destination. (required)")
@@ -61,10 +61,10 @@ func init() {
 func runCopy(from, to string, client *http.Client) {
 	switch {
 	case proj:
-		g := groupPages{}
-		g.copy(from, to, client)
-	case group:
-		p := projectPages{}
+		p := new(Projects)
 		p.copy(from, to, client)
+	default:
+		g := new(Groups)
+		g.copy(from, to, client)
 	}
 }

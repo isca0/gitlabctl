@@ -4,10 +4,9 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/yanzay/log"
 )
 
 // Requester satisfies the Req method.
@@ -49,9 +48,9 @@ func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err e
 	h = resp.Header
 	b, _ = ioutil.ReadAll(resp.Body)
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode > 206 {
 		err = errors.New(resp.Status + " " + get.Url)
-		log.Error(err)
+		log.Fatal(err)
 		return
 	}
 

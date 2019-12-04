@@ -24,7 +24,7 @@ import (
 // and a int to return on object of the splited array.
 // if 1 will return the last object "thing"
 // if 2 the parent object "some"
-func GetSplit(s string) (o string, p string) {
+func GetSplit(s string) (o, p string) {
 	re := regexp.MustCompile(`/`)
 	if re.MatchString(s) {
 		n := strings.Split(s, "/")

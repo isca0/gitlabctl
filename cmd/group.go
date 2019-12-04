@@ -21,6 +21,7 @@ import (
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -29,12 +30,10 @@ import (
 // groupURL is the main gitlab API endpoint used to manage groups and subgroups.
 var groupURL = "https://gitlab.com/api/v4/groups/"
 
-//groupPages brings model.Group to this package
-type groupPages []model.Group
-
-//Groups is the appended pagesGroup
+//Groups brings model.Group to this package.
 type Groups struct {
-	Group []groupPages
+	*model.Group
+	Pages []Groups
 }
 
 // list groups on gitlab
@@ -100,7 +99,8 @@ type Groups struct {
 //	}
 //}
 
-func (g groupPages) search(n, t string, c *http.Client) (id int, grp *groupPages, err error) {
+// search a group if it exist return the id if not returns id 0.
+func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err error) {
 
 	name, _ := handlers.GetSplit(n)
 	get := handlers.Requester{
@@ -110,48 +110,48 @@ func (g groupPages) search(n, t string, c *http.Client) (id int, grp *groupPages
 	}
 
 	_, b, _, err := get.Req()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = json.Unmarshal(b, &g)
+	fmt.Println(name, string(b))
 	if err != nil {
 		return
 	}
-	grp = &g
-	return
 
-}
-
-// verify discover if the received string is a group or not.
-func (g groupPages) verify(n, t string, c *http.Client) (b bool, i int) {
-
-	_, _, err := g.search(n, t, c)
+	err = json.Unmarshal(b, &g.Pages)
 	if err != nil {
 		return
+	}
+	if len(g.Pages) == 0 {
+		id = 0
+		return
+	}
+
+	for _, grp := range g.Pages {
+		n, _ := handlers.GetSplit(grp.FullPath)
+		if n == name {
+			id = grp.ID
+			return id, &grp, nil
+		}
 	}
 	return
 }
 
 // copy  from the received source to the destination.
-func copy(f, t string, client *http.Client) (err error) {
+func (g *Groups) copy(f, t string, client *http.Client) (err error) {
 	from := strings.Split(f, ":")
 	ftk := viper.GetString(from[0])
 	//to := strings.Split(t, ":")
 	//totk := viper.GetString(to[0])
 
-	g := groupPages{}
-	_, _, err = g.search(from[1], ftk, client)
+	gid, _, err := g.search(from[1], ftk, client)
 	if err != nil {
 		return
 	}
+	fmt.Println(gid)
 
-	p := projectPages{}
-	_, _, err = p.search(from[1], ftk, client)
-	if err != nil {
-		return
-	}
+	//p := projectPages{}
+	//_, _, err = p.search(from[1], ftk, client)
+	//if err != nil {
+	//	return
+	//}
 	return
 
 }
@@ -263,27 +263,28 @@ func copy(f, t string, client *http.Client) (err error) {
 //	return gp[0].ID, nil
 //}
 //
-//// createGroup - create a group or subgroup on the destination token.
-//func (gp groupPages) createGroup(g model.Group, token string, client *http.Client) (int, int, error) {
-//
-//	post := &handlers.Requester{
-//		Meth:   "POST",
-//		Client: client,
-//	}
-//
-//	data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
-//	post.Url = getGroups + token
-//	if g.ParentID != 0 {
-//		post.Url = getGroups + token + "&parent_id=" + strconv.Itoa(g.ParentID)
-//	}
-//	post.Io = data
-//
-//	res := model.Group{}
-//	_, b := post.Req()
-//	err := json.Unmarshal(b, &res)
-//	if err != nil {
-//		return res.ID, res.ParentID, err
-//	}
-//
-//	return res.ID, res.ParentID, nil
-//}
+// create a group or subgroup on the destination token.
+func (g *Groups) create(token string, client *http.Client) (id, pid int, err error) {
+
+	post := &handlers.Requester{
+		Meth:   "POST",
+		Client: client,
+	}
+
+	data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
+	post.Url = groupURL + token
+	if g.ParentID != 0 {
+		post.Url = getGroups + token + "&parent_id=" + strconv.Itoa(g.ParentID)
+	}
+	post.Io = data
+
+	_, b, _, err := post.Req()
+	if err != nil {
+		return 0, 0, err
+	}
+	err = json.Unmarshal(b, &g.Pages)
+	if err != nil {
+		return g.ID, g.ParentID, err
+	}
+	return g.ID, g.ParentID, nil
+}

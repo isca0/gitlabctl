@@ -21,15 +21,18 @@ type Projects struct {
 	StarCount         int           `json:"star_count"`
 	ForksCount        int           `json:"forks_count"`
 	LastActivityAt    time.Time     `json:"last_activity_at"`
-	Namespace         struct {
-		ID       int    `json:"id"`
-		Name     string `json:"name"`
-		Path     string `json:"path"`
-		Kind     string `json:"kind"`
-		FullPath string `json:"full_path"`
-		ParentID int    `json:"parent_id"`
-	} `json:"namespace"`
-	Custom CustomFlags `json:"custom_flags"`
+	Namespace         Namespace     `json:"namespace"`
+	Custom            CustomFlags   `json:"custom_flags"`
+}
+
+// Namespace binds the json received from endpoint project.
+type Namespace struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	Kind     string `json:"kind"`
+	FullPath string `json:"full_path"`
+	ParentID int    `json:"parent_id"`
 }
 
 // CustomFlags brigs custom paramethers to projects.
