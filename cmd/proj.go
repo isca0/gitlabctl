@@ -109,15 +109,15 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 		return
 	}
 	gname, _ := handlers.GetSplit(to[1])
-	//g.Name = gname
+	g.Name = gname
 	//g.Path = gname
 	//g.Visibility = "private"
 	//g.Description = "automatic created by gitlabctl"
 	//fmt.Println(g.Name)
-	//gid, _, err = g.create(totk, client)
-	//if err != nil {
-	//	return
-	//}
+	gid, _, err = g.create(totk, client)
+	if err != nil {
+		return
+	}
 	log.Println("group " + gname + " created with id: " + strconv.Itoa(gid))
 
 	//starting group creation

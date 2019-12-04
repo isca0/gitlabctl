@@ -32,7 +32,7 @@ var groupURL = "https://gitlab.com/api/v4/groups/"
 
 //Groups brings model.Group to this package.
 type Groups struct {
-	*model.Group
+	model.Group
 	Pages []Groups
 }
 
@@ -271,7 +271,19 @@ func (g *Groups) create(token string, client *http.Client) (id, pid int, err err
 		Client: client,
 	}
 
-	data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
+	req := model.Group{
+		Name:        g.Name,
+		Path:        g.Path,
+		Description: g.Description,
+		Visibility:  g.Visibility,
+	}
+	gJSON, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	//data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
+	data := strings.NewReader(string(gJSON))
 	post.Url = groupURL + token
 	if g.ParentID != 0 {
 		post.Url = getGroups + token + "&parent_id=" + strconv.Itoa(g.ParentID)
