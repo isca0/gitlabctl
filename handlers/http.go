@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -8,6 +9,14 @@ import (
 	"net/http"
 	"strconv"
 )
+
+// ErrorMesg binds the received errors from API.
+type ErrorMesg struct {
+	Message struct {
+		Name []string `json:"name"`
+		Path []string `json:"path"`
+	} `json:"message"`
+}
 
 // Requester satisfies the Req method.
 type Requester struct {
@@ -48,11 +57,16 @@ func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err e
 	h = resp.Header
 	b, _ = ioutil.ReadAll(resp.Body)
 
-	if resp.StatusCode > 302 {
+	emesg := ErrorMesg{}
+	_ = json.Unmarshal(b, &emesg)
+
+	switch {
+	case resp.StatusCode == 400 && emesg.Message.Name[0] == "has already been taken":
+		log.Printf("nothing to create, its " + emesg.Message.Name[0])
+	case resp.StatusCode > 302:
 		err = errors.New(resp.Status + "\t" + string(b) + "\t" + get.Url)
 		log.Fatal(err)
 		return
 	}
-
 	return
 }

@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"log"
@@ -57,15 +56,11 @@ func (p *Projects) search(n, t string, c *http.Client) (id int, prj *Projects, e
 	}
 	//fmt.Println(get.Url)
 
-	_, b, _, err := get.Req()
-	if err != nil {
-		return
-	}
+	_, body, _, err := get.Req()
+	handlers.Lerror(err)
 
-	err = json.Unmarshal(b, &p.Pages)
-	if err != nil {
-		return
-	}
+	err = json.Unmarshal(body, &p.Pages)
+	handlers.Lerror(err)
 
 	for _, prj := range p.Pages {
 		if prj.ID != 0 {
@@ -88,58 +83,50 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	to := strings.Split(t, ":")
 	totk := viper.GetString(to[0])
 
-	fromProject, _, _ := handlers.GetSplit(from[1])
-	toProject, _, _ := handlers.GetSplit(to[1])
+	fromName, _, _ := handlers.GetSplit(from[1])
+	toName, _, _ := handlers.GetSplit(to[1])
 
-	// verification of the source
-	fid, fromP, err := p.search(from[1], ftk, client)
-	if err != nil {
-		return
-	}
-	if fid == 0 {
-		log.Fatal("project " + fromProject + " not found")
+	// geting information of the source
+	fromID, fromProject, err := p.search(from[1], ftk, client)
+	handlers.Lerror(err)
+
+	if fromID == 0 {
+		log.Fatal("project " + fromName + " not found")
 		return
 	}
 
-	// verification of the destination
-	tid, _, err := p.search(toProject, totk, client)
-	if err != nil {
+	// geting information about the destination
+	toID, _, err := p.search(toName, totk, client)
+	handlers.Lerror(err)
+
+	if toID != 0 {
+		log.Fatal("the project " + toName + " already exist")
 		return
 	}
-	if tid != 0 {
-		log.Fatal("the project " + toProject + " already exist")
-		return
-	}
+
+	p.Name = fromProject.Name
+	p.Description = fromProject.Description
+	p.Visibility = fromProject.Visibility
+	log.Printf("copying the project %s", p.Name)
 
 	g := new(Groups)
 	gid, _, err := g.search(to[1], totk, client)
 	if gid != 0 {
-		p.Name = fromP.Name
-		p.Description = fromP.Description
-		p.Visibility = fromP.Visibility
-		log.Printf("copying the project %s", p.Name)
 		p.create(totk, gid, client)
 		return
 	}
 
+	// in case of the destination groups doesnt exist
+	// will create all groups and subgroups like a tree creation
 	_, _, groupTree := handlers.GetSplit(to[1])
 	pid, err := g.treeCreation(groupTree, totk, client)
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-
-	p.Name = fromP.Name
-	p.Description = fromP.Description
-	p.Visibility = fromP.Visibility
-	log.Printf("copying the project %s", p.Name)
+	handlers.Lerror(err)
 	p.create(totk, pid, client)
-	fmt.Println(fromP.AvatarURL)
 	return
 
 }
 
-// create a project using values from the received projectPages.
+// create a project using values from the received values in Projects.
 func (p *Projects) create(token string, parentID int, client *http.Client) (err error) {
 
 	post := &handlers.Requester{
@@ -156,24 +143,12 @@ func (p *Projects) create(token string, parentID int, client *http.Client) (err 
 	}
 
 	pJSON, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
+	handlers.Lerror(err)
 	data := strings.NewReader(string(pJSON))
 	post.Url = projURL + "?private_token=" + token
 	post.Io = data
 
-	post.Url = projURL + "?private_token=" + token
-	post.Io = data
-	fmt.Println(string(pJSON), post.Url)
-
-	_, b, _, err := post.Req()
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(b, &proj)
-	if err != nil {
-		return err
-	}
+	_, _, _, err = post.Req()
+	handlers.Lerror(err)
 	return
 }
