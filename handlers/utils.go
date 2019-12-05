@@ -21,16 +21,14 @@ import (
 )
 
 // GetSplit receive a string in pattern some/thing
-// and a int to return on object of the splited array.
-// if 1 will return the last object "thing"
-// if 2 the parent object "some"
-func GetSplit(s string) (o, p string) {
+// and will return all the splited objects
+func GetSplit(s string) (o, p string, n []string) {
 	re := regexp.MustCompile(`/`)
 	if re.MatchString(s) {
-		n := strings.Split(s, "/")
+		n = strings.Split(s, "/")
 		o = n[len(n)-1]
 		p = n[len(n)-2]
-		return o, p
+		return o, p, n
 	}
 	o = s
 	return

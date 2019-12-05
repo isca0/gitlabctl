@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,6 +35,14 @@ var groupURL = "https://gitlab.com/api/v4/groups/"
 type Groups struct {
 	model.Group
 	Pages []Groups
+}
+
+// GroupCreation used to create a data to POST new group.
+type GroupCreation struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
 }
 
 // list groups on gitlab
@@ -102,7 +111,7 @@ type Groups struct {
 // search a group if it exist return the id if not returns id 0.
 func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err error) {
 
-	name, _ := handlers.GetSplit(n)
+	name, _, _ := handlers.GetSplit(n)
 	get := handlers.Requester{
 		Meth:   "GET",
 		Url:    groupURL + "?private_token=" + t + "&owned=true&search=" + name,
@@ -110,7 +119,6 @@ func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err e
 	}
 
 	_, b, _, err := get.Req()
-	fmt.Println(name, string(b))
 	if err != nil {
 		return
 	}
@@ -125,7 +133,7 @@ func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err e
 	}
 
 	for _, grp := range g.Pages {
-		n, _ := handlers.GetSplit(grp.FullPath)
+		n, _, _ := handlers.GetSplit(grp.FullPath)
 		if n == name {
 			id = grp.ID
 			return id, &grp, nil
@@ -271,7 +279,7 @@ func (g *Groups) create(token string, client *http.Client) (id, pid int, err err
 		Client: client,
 	}
 
-	req := model.Group{
+	req := GroupCreation{
 		Name:        g.Name,
 		Path:        g.Path,
 		Description: g.Description,
@@ -279,14 +287,13 @@ func (g *Groups) create(token string, client *http.Client) (id, pid int, err err
 	}
 	gJSON, err := json.Marshal(req)
 	if err != nil {
-		return err
+		return
 	}
 
-	//data := strings.NewReader(`{"description":"` + g.Description + `","visibility":"` + g.Visibility + `","path":"` + g.Path + `","name":"` + g.Name + `"}`)
 	data := strings.NewReader(string(gJSON))
-	post.Url = groupURL + token
+	post.Url = groupURL + "?private_token=" + token
 	if g.ParentID != 0 {
-		post.Url = getGroups + token + "&parent_id=" + strconv.Itoa(g.ParentID)
+		post.Url = groupURL + "?private_token=" + token + "&parent_id=" + strconv.Itoa(g.ParentID)
 	}
 	post.Io = data
 
@@ -294,9 +301,36 @@ func (g *Groups) create(token string, client *http.Client) (id, pid int, err err
 	if err != nil {
 		return 0, 0, err
 	}
-	err = json.Unmarshal(b, &g.Pages)
+	err = json.Unmarshal(b, &g)
 	if err != nil {
+		log.Fatal(err)
 		return g.ID, g.ParentID, err
 	}
 	return g.ID, g.ParentID, nil
+}
+
+// treeCreation creates a tree of groups wih subgroups when received
+// a creation pattern like group/subgroup/subgroup/subgroup
+// will create all groups and subgroups and return the last subgroup id
+func (g *Groups) treeCreation(s []string, token string, client *http.Client) (pid int, err error) {
+	for _, t := range s {
+		gid, _, _ := g.search(t, token, client)
+		if gid != 0 {
+			pid = gid
+			continue
+		}
+		g.Name = t
+		g.Path = t
+		g.Visibility = "private"
+		g.Description = "automatic created by gitlabctl"
+		g.ParentID = pid
+		pid, _, err = g.create(token, client)
+		if err != nil {
+			log.Fatal(err)
+			return pid, err
+		}
+		log.Println("group " + t + " created with id: " + strconv.Itoa(pid))
+	}
+	return pid, nil
+
 }

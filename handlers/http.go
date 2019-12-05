@@ -49,7 +49,7 @@ func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err e
 	b, _ = ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode > 302 {
-		err = errors.New(resp.Status + " " + get.Url)
+		err = errors.New(resp.Status + "\t" + string(b) + "\t" + get.Url)
 		log.Fatal(err)
 		return
 	}

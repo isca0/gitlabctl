@@ -34,7 +34,7 @@ func TestGetSplit(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		g, p := GetSplit(tc.in)
+		g, p, _ := GetSplit(tc.in)
 		if g != tc.outI && p != tc.outP {
 			t.Errorf("failed in %s, expected:%s, and: %s received:%s and: %s", tc.name, tc.outI, tc.outP, p, g)
 		}

@@ -22,7 +22,6 @@ import (
 	"gitlabctl/model"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -34,14 +33,23 @@ var projURL = "https://gitlab.com/api/v4/projects/"
 // Projects unifies a slice of projectpages and the model.Projects o this package.
 //brings model.Projects to this package
 type Projects struct {
-	*model.Projects
+	model.Projects
 	Pages []Projects
+}
+
+// ProjCreation used to create a data to POST new project.
+type ProjCreation struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+	ParentID    int    `json:"namespace_id"`
+	Avatar      string `json:"avatar"`
 }
 
 // search will verify if project exist and returns its id.
 func (p *Projects) search(n, t string, c *http.Client) (id int, prj *Projects, err error) {
 
-	name, parent := handlers.GetSplit(n)
+	name, parent, _ := handlers.GetSplit(n)
 	get := handlers.Requester{
 		Meth:   "GET",
 		Url:    projURL + "?private_token=" + t + "&owned=true&search=" + name,
@@ -61,7 +69,7 @@ func (p *Projects) search(n, t string, c *http.Client) (id int, prj *Projects, e
 
 	for _, prj := range p.Pages {
 		if prj.ID != 0 {
-			np, pid := handlers.GetSplit(strings.ToLower(prj.PathWithNamespace))
+			np, pid, _ := handlers.GetSplit(strings.ToLower(prj.PathWithNamespace))
 			if np == name && pid == parent {
 				id = prj.ID
 				return id, &prj, nil
@@ -80,8 +88,8 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	to := strings.Split(t, ":")
 	totk := viper.GetString(to[0])
 
-	fromProject, fromParent := handlers.GetSplit(from[1])
-	toProject, toParent := handlers.GetSplit(to[1])
+	fromProject, _, _ := handlers.GetSplit(from[1])
+	toProject, _, _ := handlers.GetSplit(to[1])
 
 	// verification of the source
 	fid, fromP, err := p.search(from[1], ftk, client)
@@ -102,27 +110,31 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 		log.Fatal("the project " + toProject + " already exist")
 		return
 	}
+
 	g := new(Groups)
 	gid, _, err := g.search(to[1], totk, client)
 	if gid != 0 {
-		fmt.Println("copying the project")
+		p.Name = fromP.Name
+		p.Description = fromP.Description
+		p.Visibility = fromP.Visibility
+		log.Printf("copying the project %s", p.Name)
+		p.create(totk, gid, client)
 		return
 	}
-	gname, _ := handlers.GetSplit(to[1])
-	g.Name = gname
-	//g.Path = gname
-	//g.Visibility = "private"
-	//g.Description = "automatic created by gitlabctl"
-	//fmt.Println(g.Name)
-	gid, _, err = g.create(totk, client)
-	if err != nil {
-		return
-	}
-	log.Println("group " + gname + " created with id: " + strconv.Itoa(gid))
 
-	//starting group creation
-	log.Println("creating group"+toProject, fromP, toParent, fromParent)
-	//fromP.create(totk, toParent, client)
+	_, _, groupTree := handlers.GetSplit(to[1])
+	pid, err := g.treeCreation(groupTree, totk, client)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	p.Name = fromP.Name
+	p.Description = fromP.Description
+	p.Visibility = fromP.Visibility
+	log.Printf("copying the project %s", p.Name)
+	p.create(totk, pid, client)
+	fmt.Println(fromP.AvatarURL)
 	return
 
 }
@@ -135,13 +147,12 @@ func (p *Projects) create(token string, parentID int, client *http.Client) (err 
 		Client: client,
 	}
 
-	req := model.Projects{
+	req := ProjCreation{
 		Name:        p.Name,
 		Description: p.Description,
 		Visibility:  p.Visibility,
-		Namespace: model.Namespace{
-			ID: parentID,
-		},
+		Avatar:      p.AvatarURL,
+		ParentID:    parentID,
 	}
 
 	pJSON, err := json.Marshal(req)
@@ -151,20 +162,18 @@ func (p *Projects) create(token string, parentID int, client *http.Client) (err 
 	data := strings.NewReader(string(pJSON))
 	post.Url = projURL + "?private_token=" + token
 	post.Io = data
-	fmt.Println(string(pJSON))
 
-	//data := strings.NewReader(`{"description":"` + p.Description + `","visibility":"` + p.Visibility + `","name":"` + p.Name + `","namespace_id":"` + parentId + `"}`)
-	//post.Url = projURL + "?private_token=" + token
-	//post.Io = data
+	post.Url = projURL + "?private_token=" + token
+	post.Io = data
+	fmt.Println(string(pJSON), post.Url)
 
-	//_, b, _, err := post.Req()
-	//if err != nil {
-	//	return
-	//}
-	////fmt.Println(string(b))
-	//err = json.Unmarshal(b, &proj)
-	//if err != nil {
-	//	return proj, err
-	//}
+	_, b, _, err := post.Req()
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(b, &proj)
+	if err != nil {
+		return err
+	}
 	return
 }
