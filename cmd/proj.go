@@ -110,14 +110,12 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	p.Visibility = fromProject.Visibility
 	log.Printf("copying the project %s", p.Name)
 
-	var newPrj *Projects
+	newPrj := new(Projects)
 	g := new(Groups)
 	gid, _, err := g.search(to[1], totk, client)
 	if gid != 0 {
 		newPrj, err := p.create(totk, gid, client)
-		fmt.Println(newPrj)
 		handlers.Lerror(err)
-		return err
 	}
 
 	// in case of the destination groups doesnt exist
@@ -126,14 +124,15 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	pid, err := g.treeCreation(groupTree, totk, client)
 	handlers.Lerror(err)
 	newPrj, err = p.create(totk, pid, client)
+	fmt.Println(p.WebURL, "asdad", newPrj)
 	handlers.Lerror(err)
 
-	user := viper.GetString("USERNAME")
+	user := viper.GetString("FROMUSER")
 	mp := model.Projects{
-		WebURL: p.WebURL,
+		WebURL: fromProject.WebURL,
 		Custom: model.CustomFlags{
 			BareRepo:  true,
-			ClonePath: "/tmp/gitlabctl/" + p.Name,
+			ClonePath: "/tmp/gitlabctl/" + fromProject.Name,
 			NewRepo:   newPrj.SSHURLToRepo,
 		},
 	}
@@ -146,7 +145,7 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 }
 
 // create a project using values from the received values in Projects.
-func (p *Projects) create(token string, parentID int, client *http.Client) (prj *Projects, err error) {
+func (p *Projects) create(token string, parentID int, client *http.Client) (proj *Projects, err error) {
 
 	post := &handlers.Requester{
 		Meth:   "POST",
@@ -169,7 +168,7 @@ func (p *Projects) create(token string, parentID int, client *http.Client) (prj 
 
 	_, b, _, err := post.Req()
 	handlers.Lerror(err)
-	err = json.Unmarshal(b, &prj)
+	err = json.Unmarshal(b, &proj)
 	handlers.Lerror(err)
-	return
+	return proj, nil
 }

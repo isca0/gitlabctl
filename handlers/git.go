@@ -31,18 +31,21 @@ import (
 
 // Clone a repositorie
 func Clone(p model.Projects, u, t string) (err error) {
-	fmt.Printf("git clone --bare %s\r\n", p.WebURL)
-	_, err = git.PlainClone(p.Custom.ClonePath, p.Custom.BareRepo, &git.CloneOptions{
-		URL:      p.WebURL,
-		Progress: os.Stdout,
-		Auth: &http.BasicAuth{
-			Username: u,
-			Password: t,
-		},
-	})
-	if err != nil {
-		return err
-	}
+	fmt.Println(p.PathWithNamespace, p.WebURL)
+	//	fmt.Printf("git clone --bare %s\r\n", p.WebURL)
+	//	_, err = git.PlainClone(p.Custom.ClonePath, p.Custom.BareRepo, &git.CloneOptions{
+	//		URL:          p.WebURL,
+	//		SingleBranch: false,
+	//		Progress:     os.Stdout,
+	//		Auth: &http.BasicAuth{
+	//			Username: u,
+	//			Password: t,
+	//		},
+	//	})
+	//	if err != nil {
+	//		return err
+	//	}
+	//	return
 	return
 }
 
