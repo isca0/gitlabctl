@@ -334,3 +334,29 @@ func (g *Groups) treeCreation(s []string, token string, client *http.Client) (pi
 	return pid, nil
 
 }
+
+// rm delete a group
+func (g *Groups) rm(f string, client *http.Client) (err error) {
+
+	from := strings.Split(f, ":")
+	token := viper.GetString(from[0])
+
+	name, _, _ := handlers.GetSplit(from[1])
+	gid, _, err := g.search(name, token, client)
+	handlers.Lerror(err)
+	if gid == 0 {
+		log.Fatal("group " + name + " not found")
+		return
+	}
+
+	del := &handlers.Requester{
+		Meth:   "DELETE",
+		Client: client,
+		Url:    groupURL + strconv.Itoa(gid) + "?private_token=" + token,
+	}
+
+	_, _, _, err = del.Req()
+	handlers.Lerror(err)
+	log.Println("group " + name + " with id: " + strconv.Itoa(gid) + " marked as deleted")
+	return
+}

@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"log"
@@ -109,11 +110,14 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	p.Visibility = fromProject.Visibility
 	log.Printf("copying the project %s", p.Name)
 
+	var newPrj *Projects
 	g := new(Groups)
 	gid, _, err := g.search(to[1], totk, client)
 	if gid != 0 {
-		p.create(totk, gid, client)
-		return
+		newPrj, err := p.create(totk, gid, client)
+		fmt.Println(newPrj)
+		handlers.Lerror(err)
+		return err
 	}
 
 	// in case of the destination groups doesnt exist
@@ -121,13 +125,28 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	_, _, groupTree := handlers.GetSplit(to[1])
 	pid, err := g.treeCreation(groupTree, totk, client)
 	handlers.Lerror(err)
-	p.create(totk, pid, client)
+	newPrj, err = p.create(totk, pid, client)
+	handlers.Lerror(err)
+
+	user := viper.GetString("USERNAME")
+	mp := model.Projects{
+		WebURL: p.WebURL,
+		Custom: model.CustomFlags{
+			BareRepo:  true,
+			ClonePath: "/tmp/gitlabctl/" + p.Name,
+			NewRepo:   newPrj.SSHURLToRepo,
+		},
+	}
+
+	err = handlers.Clone(mp, user, ftk)
+	handlers.Lerror(err)
+
 	return
 
 }
 
 // create a project using values from the received values in Projects.
-func (p *Projects) create(token string, parentID int, client *http.Client) (err error) {
+func (p *Projects) create(token string, parentID int, client *http.Client) (prj *Projects, err error) {
 
 	post := &handlers.Requester{
 		Meth:   "POST",
@@ -148,7 +167,9 @@ func (p *Projects) create(token string, parentID int, client *http.Client) (err 
 	post.Url = projURL + "?private_token=" + token
 	post.Io = data
 
-	_, _, _, err = post.Req()
+	_, b, _, err := post.Req()
+	handlers.Lerror(err)
+	err = json.Unmarshal(b, &prj)
 	handlers.Lerror(err)
 	return
 }
