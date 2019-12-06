@@ -14,7 +14,6 @@ import (
 type ErrorMesg struct {
 	Message struct {
 		Name []string `json:"name"`
-		Path []string `json:"path"`
 	} `json:"message"`
 }
 
@@ -61,7 +60,7 @@ func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err e
 	_ = json.Unmarshal(b, &emesg)
 
 	switch {
-	case resp.StatusCode == 400 && emesg.Message.Name[0] == "has already been taken":
+	case resp.StatusCode == 400 && len(emesg.Message.Name) > 0:
 		log.Printf("nothing to create, its " + emesg.Message.Name[0])
 	case resp.StatusCode > 302:
 		err = errors.New(resp.Status + "\t" + string(b) + "\t" + get.Url)

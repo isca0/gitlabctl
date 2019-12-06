@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"log"
@@ -55,7 +54,6 @@ func (p *Projects) search(n, t string, c *http.Client) (id int, prj *Projects, e
 		Url:    projURL + "?private_token=" + t + "&owned=true&search=" + name,
 		Client: c,
 	}
-	//fmt.Println(get.Url)
 
 	_, body, _, err := get.Req()
 	handlers.Lerror(err)
@@ -113,33 +111,39 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	newPrj := new(Projects)
 	g := new(Groups)
 	gid, _, err := g.search(to[1], totk, client)
-	if gid != 0 {
-		newPrj, err := p.create(totk, gid, client)
-		handlers.Lerror(err)
-	}
-
-	// in case of the destination groups doesnt exist
-	// will create all groups and subgroups like a tree creation
-	_, _, groupTree := handlers.GetSplit(to[1])
-	pid, err := g.treeCreation(groupTree, totk, client)
-	handlers.Lerror(err)
-	newPrj, err = p.create(totk, pid, client)
-	fmt.Println(p.WebURL, "asdad", newPrj)
-	handlers.Lerror(err)
-
-	user := viper.GetString("FROMUSER")
-	mp := model.Projects{
-		WebURL: fromProject.WebURL,
+	copyData := model.Projects{
+		HTTPURLToRepo: fromProject.HTTPURLToRepo,
 		Custom: model.CustomFlags{
-			BareRepo:  true,
+			FromUser:  viper.GetString("FROMUSER"),
+			FromToken: ftk,
 			ClonePath: "/tmp/gitlabctl/" + fromProject.Name,
-			NewRepo:   newPrj.SSHURLToRepo,
+			ToUser:    viper.GetString("TOUSER"),
+			ToToken:   totk,
 		},
 	}
 
-	err = handlers.Clone(mp, user, ftk)
-	handlers.Lerror(err)
-
+	switch {
+	// if group exist
+	case gid != 0:
+		newPrj, err = p.create(totk, gid, client)
+		handlers.Lerror(err)
+		copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
+		handlers.Clone(copyData)
+		handlers.RemoteChange(copyData)
+		handlers.Push(copyData)
+	case gid == 0:
+		// in case of the destination groups doesnt exist
+		// will create all groups and subgroups like a tree creation
+		_, _, groupTree := handlers.GetSplit(to[1])
+		pid, err := g.treeCreation(groupTree, totk, client)
+		handlers.Lerror(err)
+		newPrj, err = p.create(totk, pid, client)
+		handlers.Lerror(err)
+		copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
+		handlers.Clone(copyData)
+		handlers.RemoteChange(copyData)
+		handlers.Push(copyData)
+	}
 	return
 
 }

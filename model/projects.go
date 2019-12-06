@@ -37,7 +37,10 @@ type Namespace struct {
 
 // CustomFlags brigs custom paramethers to projects.
 type CustomFlags struct {
+	FromUser  string `json:"from_user"`
+	FromToken string `json:"from_token"`
 	ClonePath string `json:"clone_path"`
-	BareRepo  bool   `json:"bare_repo"`
-	NewRepo   string `json:"new_repo"`
+	ToUser    string `json:"to_user"`
+	ToToken   string `json:"to_token"`
+	ToRepo    string `json:"to_repo"`
 }

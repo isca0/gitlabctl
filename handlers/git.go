@@ -16,97 +16,39 @@ limitations under the License.
 package handlers
 
 import (
-	"fmt"
 	"gitlabctl/model"
-	"os"
 	"os/exec"
-
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"strings"
 )
 
-// project import model.Projects to this package.
-//type project model.Projects
-
 // Clone a repositorie
-func Clone(p model.Projects, u, t string) (err error) {
-	fmt.Println(p.PathWithNamespace, p.WebURL)
-	//	fmt.Printf("git clone --bare %s\r\n", p.WebURL)
-	//	_, err = git.PlainClone(p.Custom.ClonePath, p.Custom.BareRepo, &git.CloneOptions{
-	//		URL:          p.WebURL,
-	//		SingleBranch: false,
-	//		Progress:     os.Stdout,
-	//		Auth: &http.BasicAuth{
-	//			Username: u,
-	//			Password: t,
-	//		},
-	//	})
-	//	if err != nil {
-	//		return err
-	//	}
-	//	return
+func Clone(p model.Projects) (err error) {
+	repo := strings.Replace(p.HTTPURLToRepo, "https://", "https://"+p.Custom.FromUser+":"+p.Custom.FromToken+"@", -1)
+	cmd := exec.Command("git", "clone", "--bare", repo, p.Custom.ClonePath)
+	cmd.Run()
 	return
 }
 
 // RemoteChange remove and add a new remote to a cloned repo.
 func RemoteChange(p model.Projects) (err error) {
-
 	path := p.Custom.ClonePath
-	r, err := git.PlainOpen(path)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("git remote rm origin.\r\n")
-	err = r.DeleteRemote("origin")
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("git remote add origin %s\r\n", p.Custom.NewRepo)
-	_, err = r.CreateRemote(&config.RemoteConfig{
-		Name: "origin",
-		URLs: []string{p.Custom.NewRepo},
-	})
-	if err != nil {
-		return err
-	}
-
+	repo := strings.Replace(p.Custom.ToRepo, "https://", "https://"+p.Custom.ToUser+":"+p.Custom.ToToken+"@", -1)
+	cmd := exec.Command("git", "remote", "set-url", "origin", repo)
+	cmd.Dir = path
+	cmd.Run()
 	return
-
 }
 
 // Push the entire repositorie
-func Push(p model.Projects, u, t string) (err error) {
+func Push(p model.Projects) (err error) {
 	path := p.Custom.ClonePath
-	r, err := git.PlainOpen(path)
-	if err != nil {
-		return err
-	}
-
-	rs := config.RefSpec("+refs/heads/*:refs/remotes/origin/*")
-	tg := config.RefSpec("+refs/tags/*:refs/tags/*")
-	err = r.Push(&git.PushOptions{
-		RefSpecs: []config.RefSpec{rs, tg},
-		Progress: os.Stdout,
-		Auth: &http.BasicAuth{
-			Username: u,
-			Password: t,
-		}})
-	if err != nil {
-		return err
-	}
-
-	//cmd := exec.Command("git", "push", "--all")
-	//cmd.Dir = path
-	//cmd.Run()
-	//cmd = exec.Command("git", "push", "--tags")
-	//cmd.Dir = path
-	//cmd.Run()
-	cmd := exec.Command("rm", "-rf", path)
+	cmd := exec.Command("git", "push", "--all")
+	cmd.Dir = path
 	cmd.Run()
-
+	cmd = exec.Command("git", "push", "--tags")
+	cmd.Dir = path
+	cmd.Run()
+	cmd = exec.Command("rm", "-rf", path)
+	cmd.Run()
 	return
-
 }
