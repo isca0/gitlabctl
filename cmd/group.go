@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"gitlabctl/handlers"
 	"gitlabctl/model"
 	"log"
@@ -108,7 +107,9 @@ type GroupCreation struct {
 //	}
 //}
 
-// search a group if it exist return the id if not returns id 0.
+// search a group from a received pattern /group/subgroup
+// if subgroupd exist will return id only for the subgroup
+// if not will return 0
 func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err error) {
 
 	name, _, _ := handlers.GetSplit(n)
@@ -119,14 +120,11 @@ func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err e
 	}
 
 	_, b, _, err := get.Req()
-	if err != nil {
-		return
-	}
+	handlers.Lerror(err)
 
 	err = json.Unmarshal(b, &g.Pages)
-	if err != nil {
-		return
-	}
+	handlers.Lerror(err)
+
 	if len(g.Pages) == 0 {
 		id = 0
 		return
@@ -144,133 +142,137 @@ func (g *Groups) search(n, t string, c *http.Client) (id int, grp *Groups, err e
 
 // copy  from the received source to the destination.
 func (g *Groups) copy(f, t string, client *http.Client) (err error) {
+
 	from := strings.Split(f, ":")
 	ftk := viper.GetString(from[0])
-	//to := strings.Split(t, ":")
-	//totk := viper.GetString(to[0])
+	to := strings.Split(t, ":")
+	totk := viper.GetString(to[0])
 
-	gid, _, err := g.search(from[1], ftk, client)
-	if err != nil {
+	fromName, _, _ := handlers.GetSplit(from[1])
+	toName, _, _ := handlers.GetSplit(to[1])
+
+	fromGid, fromGroup, err := g.search(fromName, ftk, client)
+	handlers.Lerror(err)
+	if fromGid == 0 {
+		log.Fatal("group " + fromName + " not found")
 		return
 	}
-	fmt.Println(gid)
 
-	//p := projectPages{}
-	//_, _, err = p.search(from[1], ftk, client)
-	//if err != nil {
+	toGid, toGroup, err := g.search(toName, totk, client)
+	handlers.Lerror(err)
+
+	//if toGid != 0 {
+	//	newPrj, err = p.create(totk, gid, client)
+	//	handlers.Lerror(err)
+	//	copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
+	//	handlers.Clone(copyData)
+	//	handlers.RemoteChange(copyData)
+	//	handlers.Push(copyData)
 	//	return
+	//}
+	//_, _, groupTree := handlers.GetSplit(to[1])
+	//pid, err := g.treeCreation(groupTree, totk, client)
+	//handlers.Lerror(err)
+	//newPrj, err = p.create(totk, pid, client)
+	//handlers.Lerror(err)
+	//copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
+	//handlers.Clone(copyData)
+	//handlers.RemoteChange(copyData)
+	//handlers.Push(copyData)
+	//return
+
+	//if toGid == 0 {
+	//	g.Name = to[1]
+	//	g.Path = to[1]
+	//	g.Visibility = "private"
+	//	toGid, _, err = g.create(totk, client)
+	//	handlers.Lerror(err)
+	//}
+
+	//// creating the master destination group to be used as parent
+	//// for all subgroups and projects
+	//gid, sourceGroup, err := g.search(from[1], ftk, client)
+	//handlers.Lerror(err)
+
+	//majorGroup := Groups{}
+	//majorGroup.Name = sourceGroup.Name
+	//majorGroup.Description = sourceGroup.Description
+	//majorGroup.Visibility = sourceGroup.Visibility
+	//majorGroup.ParentID = toGid
+	//destGroupID, _, err := g.create(totk, client)
+	//handlers.Lerror(err)
+
+	//get := handlers.Requester{
+	//	Meth:   "GET",
+	//	Client: client,
+	//}
+
+	//// getting all the subgroups to be created and used to search projects inside
+	//get.Url = groupURL + strconv.Itoa(fromGid) + "/subgroups?private_token=" + ftk
+	//_, b, _, err := get.Req()
+	//handlers.Lerror(err)
+	//err = json.Unmarshal(b, &g.Pages)
+	//handlers.Lerror(err)
+
+	//masterGroup := Groups{}
+	//masterGroup.ID = gid
+	//masterGroup.Name = sourceGroup.Path
+	//g.Pages = append(g.Pages, masterGroup)
+
+	//proj := new(Projects)
+	//for _, grp := range g.Pages {
+
+	//	pgid, _, _ := g.search(grp.Name, totk, client)
+	//	if pgid != 0 && grp.ParentID != 0 {
+	//		grp.ParentID = destGroupID
+	//	}
+
+	//	gid, _, _ := g.create(totk, client)
+	//	if gid == 0 {
+	//		gid, _, _ = g.search(grp.Name, totk, client)
+	//	}
+
+	//	get.Url = getSubg + strconv.Itoa(grp.ID) + "/projects?private_token=" + ftk + "&per_page=50"
+	//	_, b, _, _ := get.Req()
+	//	err = json.Unmarshal(b, &proj)
+	//	if err != nil {
+	//		return err
+	//	}
+
+	//	for _, p := range proj.Pages {
+	//		newP, _ := proj.create(totk, gid, client)
+	//		fmt.Println(newP)
+	//		//fmt.Println(newP)
+	//		//p.Custom.NewRepo = newP.HTTPURLToRepo
+	//		//fmt.Println(p.Custom)
+	//		//handlers.Clone(p, viper.GetString("FROMUSER"), ftk)
+	//		//handlers.RemoteChange(p)
+	//		//handlers.Push(p, viper.GetString("TOUSER"), totk)
+	//		fmt.Println(p.PathWithNamespace)
+	//	}
 	//}
 	return
 
 }
 
-//	g := groupPages{}
-//	get := handlers.Requester{
-//		Meth:   "GET",
-//		Client: client,
-//	}
-//
-//	//master group creation
-//	mgid, _ := g.searchGroup(totk, to[1], client)
-//	if mgid == 0 {
-//		grp := model.Group{
-//			Name:       to[1],
-//			Path:       to[1],
-//			Visibility: "private",
-//		}
-//		mgid, _, _ = g.createGroup(grp, totk, client)
-//		fmt.Printf("creating master group: %s", to[1])
-//	}
-//	fmt.Printf(" Master partend ID will be: %d\r\n", mgid)
-//
-//	gid, _ := g.searchGroup(ftk, from[1], client)
-//	get.Url = getSubg + strconv.Itoa(gid) + "/subgroups?private_token=" + ftk
-//	_, b := get.Req()
-//	err = json.Unmarshal(b, &g)
-//	if err != nil {
-//		return err
-//	}
-//	mg := model.Group{
-//		ID:   gid,
-//		Name: to[1],
-//	}
-//	g = append(g, mg)
-//
-//	proj := projectPages{}
-//	for _, grp := range g {
-//
-//		pgid := g.setParentGroup(mgid, totk, from[1], grp, client)
-//		fmt.Printf("group %s with parent id: %d\r\n", grp.Name, pgid)
-//		grp.ParentID = pgid
-//		gid, _, _ := g.createGroup(grp, totk, client)
-//		if gid == 0 {
-//			gid, _ = g.searchGroup(totk, grp.Name, client)
-//		}
-//
-//		get.Url = getSubg + strconv.Itoa(grp.ID) + "/projects?private_token=" + ftk + "&per_page=50"
-//		_, b := get.Req()
-//		err = json.Unmarshal(b, &proj)
-//		if err != nil {
-//			return err
-//		}
-//
-//		for _, p := range proj {
-//			p.Custom.BareRepo = false
-//			p.Custom.ClonePath = "/tmp/gitlabctl/" + p.Name
-//			newP, _ := proj.create(p, totk, strconv.Itoa(gid), client)
-//			fmt.Println(newP)
-//			p.Custom.NewRepo = newP.HTTPURLToRepo
-//			fmt.Println(p.Custom)
-//			handlers.Clone(p, viper.GetString("FROMUSER"), ftk)
-//			handlers.RemoteChange(p)
-//			handlers.Push(p, viper.GetString("TOUSER"), totk)
-//			fmt.Println(p.PathWithNamespace)
-//		}
-//	}
-//
-//	return
-//}
-//
-//func (g groupPages) setParentGroup(mid int, token, from string, grp model.Group, client *http.Client) (id int) {
-//
-//	id, _ = g.searchGroup(token, grp.Name, client)
-//	if id != 0 && grp.ParentID != 0 {
-//		id = mid
-//		//fmt.Printf("already exist ")
-//		return
-//	}
-//	re := regexp.MustCompile(`/`)
-//	if re.MatchString(grp.FullPath) {
-//		slash := strings.Split(grp.FullPath, "/")
-//		id, _ = g.searchGroup(token, slash[len(slash)-2], client)
-//		if slash[len(slash)-2] == from {
-//			id = mid
-//		}
-//		id = mid
-//	}
-//	return
-//}
-//
-//func (gp groupPages) searchGroup(t, n string, client *http.Client) (int, error) {
-//
-//	get := handlers.Requester{
-//		Client: client,
-//		Url:    getGroups + t + "&search=" + n,
-//		Meth:   "GET",
-//	}
-//
-//	_, b := get.Req()
-//	err := json.Unmarshal(b, &gp)
-//	if err != nil {
-//		return 0, err
-//	}
-//	if len(gp) <= 0 {
-//		err = errors.New("failed, group inexistent")
-//		return 0, err
-//	}
-//	return gp[0].ID, nil
-//}
-//
+func (g *Groups) setParentGroup(mid int, name, from, token string, client *http.Client) (id int) {
+
+	id, group, err := g.search(name, token, client)
+	handlers.Lerror(err)
+	if id != 0 && group.ParentID != 0 {
+		id = mid
+		return
+	}
+
+	name, parent, _ := handlers.GetSplit(group.FullPath)
+	id, _, _ = g.search(parent, token, client)
+	if parent == from {
+		id = mid
+	}
+	id = mid
+	return
+}
+
 // create a group or subgroup on the destination token.
 func (g *Groups) create(token string, client *http.Client) (id, pid int, err error) {
 

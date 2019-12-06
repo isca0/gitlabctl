@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Igor Brandao <igorsca at protonmail dot com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -85,7 +85,6 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 	fromName, _, _ := handlers.GetSplit(from[1])
 	toName, _, _ := handlers.GetSplit(to[1])
 
-	// geting information of the source
 	fromID, fromProject, err := p.search(from[1], ftk, client)
 	handlers.Lerror(err)
 
@@ -94,7 +93,6 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 		return
 	}
 
-	// geting information about the destination
 	toID, _, err := p.search(toName, totk, client)
 	handlers.Lerror(err)
 
@@ -122,28 +120,24 @@ func (p *Projects) copy(f, t string, client *http.Client) (err error) {
 		},
 	}
 
-	switch {
-	// if group exist
-	case gid != 0:
+	if gid != 0 {
 		newPrj, err = p.create(totk, gid, client)
 		handlers.Lerror(err)
 		copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
 		handlers.Clone(copyData)
 		handlers.RemoteChange(copyData)
 		handlers.Push(copyData)
-	case gid == 0:
-		// in case of the destination groups doesnt exist
-		// will create all groups and subgroups like a tree creation
-		_, _, groupTree := handlers.GetSplit(to[1])
-		pid, err := g.treeCreation(groupTree, totk, client)
-		handlers.Lerror(err)
-		newPrj, err = p.create(totk, pid, client)
-		handlers.Lerror(err)
-		copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
-		handlers.Clone(copyData)
-		handlers.RemoteChange(copyData)
-		handlers.Push(copyData)
+		return
 	}
+	_, _, groupTree := handlers.GetSplit(to[1])
+	pid, err := g.treeCreation(groupTree, totk, client)
+	handlers.Lerror(err)
+	newPrj, err = p.create(totk, pid, client)
+	handlers.Lerror(err)
+	copyData.Custom.ToRepo = newPrj.HTTPURLToRepo
+	handlers.Clone(copyData)
+	handlers.RemoteChange(copyData)
+	handlers.Push(copyData)
 	return
 
 }
