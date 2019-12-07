@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -60,9 +61,11 @@ func (get *Requester) Req() (h http.Header, b []byte, resp *http.Response, err e
 	_ = json.Unmarshal(b, &emesg)
 
 	switch {
-	case resp.StatusCode == 400 && len(emesg.Message.Name) > 0:
-		log.Printf("nothing to create, its " + emesg.Message.Name[0])
-	case resp.StatusCode > 302:
+	case resp.StatusCode == 400:
+		for _, msg := range emesg.Message.Name {
+			fmt.Println(msg)
+		}
+	case resp.StatusCode > 302 && resp.StatusCode != 400:
 		err = errors.New(resp.Status + "\t" + string(b) + "\t" + get.Url)
 		log.Fatal(err)
 		return
