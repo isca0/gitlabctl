@@ -78,6 +78,45 @@ func (g *Groups) search(n, t string, c *http.Client) (id int, grp Groups, err er
 	return
 }
 
+// list print groups and projects accordanly by the received arguments.
+func (g *Groups) list(n []string, t string, c *http.Client) (err error) {
+
+	get := handlers.Requester{
+		Meth:   "GET",
+		Url:    groupURL + "?private_token=" + t + "&owned=true",
+		Client: c,
+	}
+
+	_, b, _, err := get.Req()
+	handlers.Lerror(err)
+
+	err = json.Unmarshal(b, &g.Pages)
+	handlers.Lerror(err)
+
+	p := new(Projects)
+
+	for _, grp := range g.Pages {
+
+		if len(n) != 0 && strings.ToLower(grp.FullPath) != strings.ToLower(n[0]) {
+			continue
+		}
+
+		fmt.Printf("\nListing ID: %d Group:%s\r\n", grp.ID, grp.FullPath)
+		get.Url = groupURL + strconv.Itoa(grp.ID) + "/projects?private_token=" + t + "&owned=true"
+		_, b, _, err := get.Req()
+		handlers.Lerror(err)
+
+		err = json.Unmarshal(b, &p.Pages)
+		handlers.Lerror(err)
+		for _, prj := range p.Pages {
+			fmt.Println(prj.PathWithNamespace)
+		}
+
+	}
+	return
+
+}
+
 // copy  from the received source to the destination.
 func (g *Groups) copy(f, t string, client *http.Client) (err error) {
 

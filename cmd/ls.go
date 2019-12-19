@@ -29,13 +29,13 @@ var (
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls",
-	Short: "List projects or groups",
-	Long:  `List projects or groups from the received target.`,
+	Use:   "ls arg",
+	Short: "List groups and the inner projects",
+	Long: `Without arguments list all groups and projects, if received a valid group will
+	list only this group`,
 	Example: `  gitlabctl ls --target sessionA
-  gitlabctl ls --target sessionB`,
-
-	Args: cobra.NoArgs,
+  gitlabctl ls group/subgroup --target sessionB`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := &http.Client{
 			Timeout: time.Second * 30,
@@ -51,15 +51,6 @@ func init() {
 
 // runList executes the ls command by treating received arguments.
 func runList(args []string, token string, client *http.Client) {
-	//	switch {
-	//	case args[0] == "group":
-	//		groupList(args, token, client)
-	//	case args[0] == "proj":
-	//		p := projectPages{}
-	//		p.list(client, getProj, token)
-	//for _, prj := range projects.Project {
-	//	fmt.Println(prj[0].Name)
-	//}
-
-	//	}
+	g := new(Groups)
+	g.list(args, token, client)
 }
