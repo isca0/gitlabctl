@@ -1,6 +1,9 @@
 # gitlabctl
 [![pipeline status](https://gitlab.com/isca/gitlabctl/badges/master/pipeline.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
 [![coverage report](https://gitlab.com/isca/gitlabctl/badges/master/coverage.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
+[![Go Report Card](https://goreportcard.com/badge/gitlab.com/isca/gitlabctl)](https://goreportcard.com/report/gitlab.com/isca/gitlabctl)
+
+![gitlabctl](img/gitlabctl-icon.png)
 
 This is a CLI to manipulate the gitlab API trough the command line. You can list,copy,delete or create projects and groups with a single command.
 
@@ -91,7 +94,7 @@ _This command will delete the group `mysubgroup` and all the inside subgroups an
 This project is cloud-native by design so you can run this code with environments instead of the config.toml file.
 Here is the list of support environments:
 
-  *	SESSION(\*N) `(string)` specify the token for a gitlab session. _You can use any varible name for API token, but by default it will look to a variable named `SESSIONA`._
+  *	SESSION(\*N) `(string)` specify the token for a gitlab session. _You can use any variable name for the API token, by default it will look to a variable named `SESSIONA`._
   * FROMUSER `(string)` set the login of the user of sessionA (used during the copy command)
   * TOSUER `(string)` set the login of the user of sessionB (used during the copy command)
 

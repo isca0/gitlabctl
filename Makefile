@@ -37,6 +37,10 @@ uninstall:
 test:
 	@(go test ./... -v -cover)
 
+.PHONY: coverage
+coverage:
+	@(GO111MODULE="on";go test `go list ./...|grep -v /vendor/` -v -coverprofile .testCoverage.txt)
+
 .PHONY: build
 build:
 	@(go build)
