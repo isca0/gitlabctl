@@ -2,18 +2,24 @@
 [![pipeline status](https://gitlab.com/isca/gitlabctl/badges/master/pipeline.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
 [![coverage report](https://gitlab.com/isca/gitlabctl/badges/master/coverage.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
 
-This is a CLI to manipulate the gitlab API trough command line. You can list,copy,delete or create projects and groups in a single line.
+This is a CLI to manipulate the gitlab API trough the command line. You can list,copy,delete or create projects and groups with a single command.
 
 ### Prerequisites
 
-This package is built with go1.12 and use only the packages from stdlibrary so there are no external dependencies  
-to compile this code.
-All you'll need is the `go.1.12` or superior and a kubernetes resource template. Moreover on that in the template section of this manual.
-_If will use installation with Makefile using the `make install` command you'll also need some version of docker installed._
+All you'll need is the `go.1.12` or superior and API token to talk with your gitlab sessions. Moreover on that in the [Getting Started](https://gitlab.com/isca/gitlabctl#how_to_use).
+This package also use cobra and viper packages. You can just run go get to acquire than.
 
 ### Installing
 
 What things you need to install the software and how to install them from the source:
+
+Get the package:
+
+```
+go get gitlab.com/isca/gitlabctl
+```
+
+Install it:
 
 ```
 go install
@@ -24,13 +30,70 @@ You can also build and install using docker, all you'll need is run the `Makefil
 ```
 make install
 ```
-_This process creates a docker container to build and install the go binary, so it needs a docker installed._
 
-To uninstall run:
+## Getting Started
 
+This cli was inspired by the unixes command line, so it you have almost the same syntax to list, copy and delete and create.
+
+#### Listing
+
+_listing all the projects and groups on your gitlab session:_
 ```
-make uninstall
+export SESSIONA="myApiToken"
+gitlabctl ls 
 ```
+
+_listing all the content of an specific group:_
+```
+export MYOTHERSESSION="myApiToken"
+gitlabctl ls mygroup/mysubgroup -t myothersession
+```
+
+#### Copying 
+If you have two gitlab sessions for example an on-premisse omnibus session and a gitlab.com session, you'll
+will find this command useful to migrate groups from one session to another.
+
+
+### Group Copy
+_copying an entire group with all subgroups from one session to another:_
+```
+export FROMUSER="myuserFromTheSourceCopy"
+export TOUSER="myUserFromTheDestinationCopy"
+export SESSIONA="apiTokenOfSourceCopy"
+export SESSIONB="apiTokenOfDestinationCopy"
+gitlabctl cp group --to=sessionA:mygroup/mysubgroup --to=sessionB:someGroup
+```
+_If the `someGroup` doesnt exist in `sessionB`, it will be automatically created._
+
+### Project Copy
+_copying a project from one session to another:_
+```
+export FROMUSER="myuserFromTheSourceCopy"
+export TOUSER="myUserFromTheDestinationCopy"
+export SESSIONA="apiTokenOfSourceCopy"
+export SESSIONB="apiTokenOfDestinationCopy"
+gitlabctl cp proj --to=sessionA:mygroup/mysubgroup/myproject --to=sessionB:someGroup
+```
+_this will copy `myproject` from `sessionA` into `someGroup` on sessionB._
+
+
+#### Deleting
+
+You can delete a group like this:
+```
+export SESSIONA="apiTokenOfSourceCopy"
+gitlabctl rm group --from=sessionA:mygroup/mysubgroup
+```
+_This command will delete the group `mysubgroup` and all the inside subgroups and projects._
+
+## Environments
+
+This project is cloud-native by design so you can run this code with environments instead of the config.toml file.
+Here is the list of support environments:
+
+  *	SESSION(\*N) `(string)` specify the token for a gitlab session. _You can use any varible name for API token, but by default it will look to a variable named `SESSIONA`._
+  * FROMUSER `(string)` set the login of the user of sessionA (used during the copy command)
+  * TOSUER `(string)` set the login of the user of sessionB (used during the copy command)
 
 ## Running the tests
 
@@ -48,153 +111,6 @@ To run this code locally for test purposes use:
 ```
 go run main.go
 ```
-
-## Getting Started
-
-You'll need to create a valid k8s template and use `kploy` to render it. For e.g:
-
-```
----
-# Deployment resource template for project {{ .ProjectName }} on k8s 1.14.6
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ .ProjectName }}
-  namespace: {{ .Namespace }}
-  labels:
-    app: {{ .ProjectName }}
-spec:
-  replicas: {{ .Replicas }}
-  selector:
-    matchLabels:
-      app: {{ .ProjectName }}
-  template:
-    metadata:
-      labels:
-        app: {{ .ProjectName }}
-    spec:
-      containers:
-        - name: {{ .ProjectName }}
-          image: {{ .ContainerName }}
-          ports:
-          - containerPort: {{ .ContainerPort }}
-          resources:
-            requests:
-              memory: "{{ .Memory }}"
-              cpu: "{{ .Cpu }}"
-            limits:
-              memory: "{{ .LimitMem }}"
-              cpu: "{{ .LimitCpu }}"
-```
-
-_Assuming this template as deploy-template.yml, to render this file you'll need to export the template variables,
-and after that, you'll be ready to use kploy._
-
-```
-export ProjectName=MyProject;\
-export NameSpace=MyNameSpace;\
-export Replicas=1;\
-export ContainerName=MyContainer:Version;\
-export ContainerPort=8000;\
-export Memory=10Mi;\
-export Cpu=100m;\
-export LimitMem=12Mi;\
-export LimitCpu=120m;\
-kploy -c deploy-template.yml -o > deploy.yml
-```
-_If `-c` was not specified this script will search by default a template in `/etc/kploy/deploy.yml`, which is provided with the command `make install`._
-_By default with `-o` flag will only output the rendered template._
-
-_You can render and apply the rendered template direct to the default cluster with:_
-
-```
-export ProjectName=MyProject;\
-export NameSpace=MyNameSpace;\
-export Replicas=1;\
-export ContainerName=MyContainer:Version;\
-export ContainerPort=8000;\
-export Memory=10Mi;\
-export Cpu=100m;\
-export LimitMem=12Mi;\
-export LimitCpu=120m;\
-kploy -c deploy-template.yml -apply
-```
-
-_You can specify a different cluster using the flag -target yourKubeConfig._
-
-
-That's the part where you automate everything on your CI and forget.
-
-There are a few more flags on this command you can list them with `kploy -h`.
-
-## Custom Variables
-
-You can inject your own variables into containers with kploy. All you'll need is  
-declare your variables starting with `KP_`. e.g:
-```
-...
-export KP_MyVar="myValue";\
-...
-kploy -c deploy-template -apply
-```
-
-The command above will create a template like:
-```
-...
-spec:
-   containers:
-   - env:
-     - name: "MyVar"
-     - value: "myValue"
-...
-```
-The variable `MyVar` can be accessed from inside the containers. 
-
-## Host Aliases
-
-You can add custom host aliases with kploy by exporting a variable like this:
-```
-...
-export KHOST="hostA.com,hostB.com>1.1.1.1:hostC.io>2.2.2.2"
-...
-kploy -c deploy-template -apply
-```
-
-You can also append variables into `KHOST` with this syntax:
-```
-export HOSTA="hostA.com>1.1.1.1"
-export HOSTBC="hostB.com,hostC.com>2.2.2.2"
-export KHOST=$HOSTA:$HOSTBC
-...
-kploy -c template -o
-```
-Both syntaxes are supported and the result will be the same.
-
-As a result of the above commands, you should have a deployment with these entries:
-```
-...
-spec:
-   hostAliases:
-   - hostnames:
-    - "hostA.com"
-    - "hostB.com"
-    ip: "1.1.1.1"
-   - hostnames:
-    - "hostC.io"
-    ip: "2.2.2.2"
-   containers:
-   ...
-...
-```
-
-## Environments
-
-This project is cloud-native by design so you can run this code with environments instead of the config.toml file.
-Here is the list of support environments:
-
-  *	SESSION(\*N) `(string)` specify the token for a gitlab session.
-  * FROMUSER `(string)` set the login of the user of sessionA (used during the copy command)
-  * TOSUER `(string)` set the login of the user of sessionB (used during the copy command)
 
 ## Built With
 
