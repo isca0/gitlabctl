@@ -38,7 +38,7 @@ make install
 
 ## Getting Started
 
-This cli was inspired by the unixes command line, so it you have almost the same syntax to list, copy and delete and create.
+This cli was inspired by the unixes command line, so you'll find almost the same syntax when using it.
 
 #### Listing
 
@@ -68,7 +68,7 @@ export SESSIONA="apiTokenOfSourceCopy"
 export SESSIONB="apiTokenOfDestinationCopy"
 gitlabctl cp group --to=sessionA:mygroup/mysubgroup --to=sessionB:someGroup
 ```
-_If the `someGroup` doesnt exist in `sessionB`, it will be automatically created._
+_If the `someGroup` doesn't exist in `sessionB`, it will be automatically created._
 
  * Project Copy
 _copying a project from one session to another:_
@@ -89,7 +89,7 @@ You can delete a group like this:
 export SESSIONA="apiTokenOfSourceCopy"
 gitlabctl rm group --from=sessionA:mygroup/mysubgroup
 ```
-_This command will delete the group `mysubgroup` and all the inside subgroups and projects._
+_This command will delete the group `mysubgroup` and all the inside content._
 
 ## Environments
 
