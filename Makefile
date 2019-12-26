@@ -1,5 +1,5 @@
 app = gitlabctl
-version = $$(cat VERSION.md|awk '{print $$1}')
+version = $$(grep "\[v" CHANGELOG.md|head -1|awk -F'[' '{print $$2}'|awk -F']' '{print $$1}')
 install_global = "/usr/local/bin"
 
 .PHONY: help
@@ -17,10 +17,10 @@ install:
 	@(if dk version >/dev/null 2>&1; then \
 	docker run --rm --name $(app)-install -v $(PWD):/go/src/$(app) -v $(install_global):/tmp golang:1.12-alpine3.9 ash -c \
 		"(cd /go/src/$(app);apk add git build-base;go get -v ; \
-			go build -ldflags \"-X $(app)/cmd.Version=$(version)\" -tags netgo -a -installsuffix cgo -o /tmp/$(app) .)"; \
+			go build -ldflags \"-X $(app)/cmd.version=$(version)\" -tags netgo -a -installsuffix cgo -o /tmp/$(app) .)"; \
 	echo $(app) installed on $(install_global); \
 	else \
-		go install; \
+		go install -ldflags "-X $(app)/cmd.version=$(version)"; \
 		echo $(app) installed on $(GOBIN);fi)
 
 .PHONY: uninstall
@@ -44,5 +44,4 @@ coverage:
 .PHONY: build
 build:
 	@(go build)
-
 
