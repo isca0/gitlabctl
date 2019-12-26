@@ -58,8 +58,6 @@ gitlabctl ls mygroup/mysubgroup -t myothersession
 If you have two gitlab sessions for example an on-premisse omnibus session and a gitlab.com session, you'll
 will find this command useful to migrate groups from one session to another.
 
-
- * Group Copy
 _copying an entire group with all subgroups from one session to another:_
 ```
 export FROMUSER="myuserFromTheSourceCopy"
@@ -70,7 +68,6 @@ gitlabctl cp group --to=sessionA:mygroup/mysubgroup --to=sessionB:someGroup
 ```
 _If the `someGroup` doesn't exist in `sessionB`, it will be automatically created._
 
- * Project Copy
 _copying a project from one session to another:_
 ```
 export FROMUSER="myuserFromTheSourceCopy"
