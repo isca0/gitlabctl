@@ -3,13 +3,13 @@
 [![coverage report](https://gitlab.com/isca/gitlabctl/badges/master/coverage.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
 [![Go Report Card](https://goreportcard.com/badge/gitlab.com/isca/gitlabctl)](https://goreportcard.com/report/gitlab.com/isca/gitlabctl)
 
-![gitlabctl](img/gitlabctl-icon.png)
+![gitlabctl](img/gitlabctl.svg)
 
 This is a CLI to manipulate the gitlab API trough the command line. You can list,copy,delete or create projects and groups with a single command.
 
 ### Prerequisites
 
-All you'll need is the `go.1.12` or superior and API token to talk with your gitlab sessions. Moreover on that in the [Getting Started](https://gitlab.com/isca/gitlabctl#how_to_use).
+All you'll need is the `go.1.12` or superior and API token to talk with your gitlab sessions. Moreover on that in the [Getting Started](https://gitlab.com/isca/gitlabctl#getting-started).
 This package also use cobra and viper packages. You can just run go get to acquire than.
 
 ### Installing
@@ -57,7 +57,7 @@ If you have two gitlab sessions for example an on-premisse omnibus session and a
 will find this command useful to migrate groups from one session to another.
 
 
-### Group Copy
+ * Group Copy
 _copying an entire group with all subgroups from one session to another:_
 ```
 export FROMUSER="myuserFromTheSourceCopy"
@@ -68,7 +68,7 @@ gitlabctl cp group --to=sessionA:mygroup/mysubgroup --to=sessionB:someGroup
 ```
 _If the `someGroup` doesnt exist in `sessionB`, it will be automatically created._
 
-### Project Copy
+ * Project Copy
 _copying a project from one session to another:_
 ```
 export FROMUSER="myuserFromTheSourceCopy"
@@ -128,5 +128,5 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Igor Brandao** - *Initial work* - [isca](https://gitlab.com/isca)
 
 See also the list of [contributors](https://gitlab.com/isca/gitlabctl/project_members) who can be participated in this project.
-_Isca disclaims all copyright interest in the program “gitlabctl” (which render kubernetes templates from environment variables) is written by Igor Brandao_  
+_Isca disclaims all copyright interest in the program “gitlabctl” (which is a gitlab CLI tool) is written by Igor Brandao_  
 
