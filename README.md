@@ -3,7 +3,9 @@
 [![coverage report](https://gitlab.com/isca/gitlabctl/badges/master/coverage.svg)](https://gitlab.com/isca/gitlabctl/commits/master)
 [![Go Report Card](https://goreportcard.com/badge/gitlab.com/isca/gitlabctl)](https://goreportcard.com/report/gitlab.com/isca/gitlabctl)
 
+<center>
 ![gitlabctl](img/gitlabctl.svg)
+</center>
 
 This is a CLI to manipulate the gitlab API trough the command line. You can list,copy,delete or create projects and groups with a single command.
 

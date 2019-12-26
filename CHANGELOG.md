@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2019-12-20
 ### Added
-- Initial alpha version
+- Initial version
 - Added list options for group and projects
 - Added CHANGELOG.md
 - Added support to install 
 - Added support to uninstall
 - Added help on Makefile
+- Added go mod
 
 ### Changed
 - Improved README.md
@@ -22,3 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - VERSION file by moving to CHANGELOG.md
+
+
+## [v0.0.1a] - 2019-12-05
+### Description
+- Initial alpha version
+- Study case before code refactor
